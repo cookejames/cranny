@@ -1,5 +1,5 @@
 import { generateGrid, PIECE_IDS, solve, type PieceId } from '@tessel/engine';
-import { useEffect, useReducer, useState } from 'react';
+import { useEffect, useReducer, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Board } from '../board/Board.tsx';
 import { FloatingPiece } from '../drag/FloatingPiece.tsx';
@@ -13,7 +13,8 @@ import {
   roundReducer,
   type RoundState,
 } from '../game/round.ts';
-import { clearRound, loadRound, saveRound } from '../storage/storage.ts';
+import { recordSolve, type SolveOutcome } from '../game/stats.ts';
+import { clearRound, loadRound, loadStats, saveRound, saveStats } from '../storage/storage.ts';
 import { Controls } from './Controls.tsx';
 import { PlayHeader } from './PlayHeader.tsx';
 import styles from './PlayScreen.module.css';
@@ -75,7 +76,7 @@ const prefersReducedMotion = () =>
  * The play screen for one grid (SPEC.md §5). Before Start the board is hidden under a Start
  * button; Start reveals it and starts the clock. Pieces are selected, rotated and flipped in the
  * tray and dragged on and off the board (`useDrag`). The drop that fills the grid stops the
- * clock, plays the celebration, then shows Results. The round is saved after every change, so a
+ * clock and records the solve in the stats, plays the celebration, then shows Results. The round is saved after every change, so a
  * reload resumes it with the clock still running.
  */
 export function PlayScreen({ version, seed, code, shared, startSolved = false }: PlayScreenProps) {
@@ -84,7 +85,12 @@ export function PlayScreen({ version, seed, code, shared, startSolved = false }:
     { version, seed, code, startSolved },
     initialRound,
   );
-  const [showResults, setShowResults] = useState(false);
+  /**
+   * The solve's effect on the stats, recorded once at the completing drop. Kept in a ref so a
+   * re-run of the effect (e.g. a development hot reload) can't count the solve twice.
+   */
+  const solve = useRef<SolveOutcome | null>(null);
+  const [results, setResults] = useState<SolveOutcome | null>(null);
   const navigate = useNavigate();
   const placed = (piece: PieceId) => isPlaced(round, piece);
   const select = (piece: PieceId) => dispatch({ type: 'select', piece });
@@ -116,20 +122,34 @@ export function PlayScreen({ version, seed, code, shared, startSolved = false }:
     }
   }, [round, code]);
 
-  // Celebrate, then show Results.
+  // On completion: record the solve in the stats straight away (so leaving during the
+  // celebration still counts it), celebrate, then show Results.
+  const finalMs = round.status === 'complete' ? elapsedMs(round, round.finishedAt ?? 0) : null;
   useEffect(() => {
-    if (round.status !== 'complete') return;
+    if (finalMs === null) return;
+    if (!solve.current) {
+      const { stats, outcome } = recordSolve(loadStats(), finalMs);
+      saveStats(stats);
+      solve.current = outcome;
+    }
+    const outcome = solve.current;
     const ms = prefersReducedMotion() ? REDUCED_CELEBRATION_MS : CELEBRATION_MS;
-    const timer = setTimeout(() => setShowResults(true), ms);
+    const timer = setTimeout(() => setResults(outcome), ms);
     return () => clearTimeout(timer);
-  }, [round.status]);
+  }, [finalMs]);
 
   const nextGrid = () => navigate('/play');
 
-  if (showResults) {
+  if (results) {
     return (
       <main className={styles.play}>
-        <Results elapsedMs={elapsedMs(round, round.finishedAt ?? 0)} onNextGrid={nextGrid} />
+        <Results
+          code={code}
+          shared={shared}
+          board={round.board}
+          outcome={results}
+          onNextGrid={nextGrid}
+        />
       </main>
     );
   }

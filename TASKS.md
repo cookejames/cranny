@@ -56,10 +56,10 @@
 
 ## Phase 6 — Results, stats and sharing (§5, §8)
 
-- [ ] **T6.1 Stats update.** When a grid is solved, update `solved`, `bestMs` and `recentMs` (last 10). Skips are not recorded, and shared grids count the same as any other.
-- [ ] **T6.2 Results view.** The time as `m:ss.s`, "New personal best" when applicable, a solved-board thumbnail, cards for Previous best, Average and Solved, and Next grid, Share grid and Home buttons.
-- [ ] **T6.3 Share.** `navigator.share` where available, otherwise copy to the clipboard and show a "Link copied" toast.
-- [ ] **T6.4 Home screen.** Wordmark, tagline, the decorative board, a Play button, and a stats row that stays hidden until the first solve. No Race card.
+- [x] **T6.1 Stats update.** When a grid is solved, update `solved`, `bestMs` and `recentMs` (last 10). Skips are not recorded, and shared grids count the same as any other.
+- [x] **T6.2 Results view.** The time as `m:ss.s`, "New personal best" when applicable, a solved-board thumbnail, cards for Previous best, Average and Solved, and Next grid, Share grid and Home buttons.
+- [x] **T6.3 Share.** `navigator.share` where available, otherwise copy to the clipboard and show a "Link copied" toast.
+- [x] **T6.4 Home screen.** Wordmark, tagline, the decorative board, a Play button, and a stats row that stays hidden until the first solve. No Race card.
 
 ## Phase 7 — Tests and polish (§10, §12)
 

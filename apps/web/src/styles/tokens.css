@@ -13,6 +13,17 @@
   --color-line: #cfc5b2;
   --color-invalid: #b42318;
 
+  /* The dark Results screen (design/Complete.dc.html) */
+  --color-night: #1d1b18;
+  --color-night-card: #2a2723;
+  --color-night-frame: #3a3630;
+  --color-night-blocked: #141210;
+  --color-night-line: #4a453d;
+  --color-night-text: #f3efe6;
+  --color-night-label: #d9cfbd;
+  --color-night-muted: #bdb3a2;
+  --color-best: #9fd3a0;
+
   /* Pieces, keyed by the engine's `colorToken` (e.g. `piece-t4`) */
   --piece-i4: #3f6fa8;
   --piece-o4: #ee7e2f;

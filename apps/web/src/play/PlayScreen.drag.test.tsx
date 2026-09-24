@@ -1,10 +1,11 @@
 import { BOARD_SIZE, generateGrid } from '@tessel/engine';
 import { act, fireEvent, render, screen } from '@testing-library/react';
+import { StrictMode } from 'react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BOARD_SPAN, CELL_GAP } from '../board/metrics.ts';
 import { RETURN_MS, SETTLE_MS } from '../drag/useDrag.ts';
-import { loadRound } from '../storage/storage.ts';
+import { EMPTY_STATS, loadRound, loadStats, saveStats } from '../storage/storage.ts';
 import { CELEBRATION_MS, PlayScreen, REDUCED_CELEBRATION_MS } from './PlayScreen.tsx';
 
 /**
@@ -56,9 +57,11 @@ const cellName = ([row, col]: readonly [number, number], what: string) =>
  */
 function renderPlay(startSolved = false) {
   const view = render(
-    <MemoryRouter>
-      <PlayScreen version={1} seed={42} code="100001A" shared={false} startSolved={startSolved} />
-    </MemoryRouter>,
+    <StrictMode>
+      <MemoryRouter>
+        <PlayScreen version={1} seed={42} code="100001A" shared={false} startSolved={startSolved} />
+      </MemoryRouter>
+    </StrictMode>,
   );
   if (!startSolved) fireEvent.click(screen.getByRole('button', { name: 'Start' }));
   return view;
@@ -414,6 +417,28 @@ describe('PlayScreen dragging', () => {
     act(() => vi.advanceTimersByTime(1));
     expect(screen.getByRole('heading', { name: 'Grid complete' })).toBeInTheDocument();
     expect(screen.getByText('0:03.0')).toBeInTheDocument();
+    expect(screen.getByText('New personal best')).toBeInTheDocument();
+  });
+
+  it('records the solve in the stats once, at the completing drop', () => {
+    saveStats({ solved: 4, bestMs: 2_000, recentMs: [2_000, 6_000] });
+    renderPlay(true);
+    act(() => vi.advanceTimersByTime(3_000));
+    finish();
+    // Recorded at the drop, before Results appear, and only once.
+    expect(loadStats()).toEqual({ solved: 5, bestMs: 2_000, recentMs: [2_000, 6_000, 3_000] });
+    act(() => vi.advanceTimersByTime(CELEBRATION_MS));
+    expect(loadStats().solved).toBe(5);
+    expect(screen.queryByText('New personal best')).not.toBeInTheDocument();
+    expect(screen.getByText('Previous best').nextSibling).toHaveTextContent('0:02');
+    expect(screen.getByText('Solved').nextSibling).toHaveTextContent('5');
+  });
+
+  it('records nothing for a grid that is skipped or left unfinished', () => {
+    renderPlay(true);
+    fireEvent.click(screen.getByRole('button', { name: 'New grid' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Tap again to skip' }));
+    expect(loadStats()).toEqual(EMPTY_STATS);
   });
 
   it('shortens the celebration to a fade with reduced motion', () => {

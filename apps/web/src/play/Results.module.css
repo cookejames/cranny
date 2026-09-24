@@ -1,40 +1,150 @@
+/* The dark Results screen (design/Complete.dc.html), covering the whole viewport. */
 .results {
-  flex: 1;
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  overflow-y: auto;
+  background: var(--color-night);
+  color: var(--color-night-text);
+  animation: appear 200ms ease-out;
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+  }
+}
+
+.column {
+  max-width: var(--column-width);
+  min-height: 100%;
+  margin: 0 auto;
+  padding: clamp(24px, 6dvh, 64px) 24px calc(24px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
+  gap: clamp(12px, 2.6dvh, 24px);
+}
+
+.heading,
+.timeBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
+}
+
+.heading {
+  gap: 6px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-night-label);
 }
 
 .title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 28px;
+  font-size: 40px;
   font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+.timeBlock {
+  gap: 4px;
 }
 
 .time {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 56px;
+  font-size: clamp(56px, 10dvh, 84px);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.best {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-best);
+}
+
+.best svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The board in the design's darker palette. */
+.thumbnail {
+  --color-board-frame: var(--color-night-frame);
+  --color-cell-blocked: var(--color-night-blocked);
+  --color-peg: var(--color-night-frame);
+
+  display: flex;
+  justify-content: center;
+}
+
+.cards {
+  align-self: stretch;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.card {
+  padding: 14px 12px;
+  border-radius: 12px;
+  background: var(--color-night-card);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.card dt {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-night-muted);
+}
+
+.card dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
 }
 
 .actions {
-  width: 100%;
-  margin-top: 12px;
+  align-self: stretch;
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.secondaryRow {
   display: grid;
-  gap: 8px;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
 .primary,
 .secondary {
-  height: 48px;
-  border-radius: var(--radius-control);
+  border-radius: 14px;
+  font-size: 16px;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -44,17 +154,22 @@
 }
 
 .primary {
+  height: 56px;
   border: 0;
-  background: var(--color-ink);
-  color: var(--color-ground);
+  background: var(--color-night-text);
+  color: var(--color-night);
+  font-size: 17px;
 }
 
 .secondary {
-  border: 1.5px solid var(--color-line);
+  height: 52px;
+  border: 1.5px solid var(--color-night-line);
+  background: transparent;
+  color: var(--color-night-text);
 }
 
 .primary:focus-visible,
 .secondary:focus-visible {
-  outline: 3px solid var(--piece-i4);
+  outline: 3px solid var(--color-best);
   outline-offset: 2px;
 }
