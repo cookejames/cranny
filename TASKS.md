@@ -43,7 +43,7 @@
 - [x] **T4.3 Snap preview.** A tinted ghost for a valid target and a red outline on the cells over the board for an invalid one. It only re-renders when the target cell changes.
 - [x] **T4.4 Drop rules.** Valid drop: place the piece with a 120 ms settle. Invalid drop over the board: return the piece to where it came from. Drop outside the board: return it to the tray. `pointercancel`: return it to where it came from.
 - [x] **T4.5 Moving placed pieces.** Dragging a placed piece picks it up (using `ignore` from T1.3) and applies the same drop rules.
-- [ ] **T4.6 Real-device check.** Test on an iPhone (Safari), an Android phone (Chrome) and a desktop browser. Watch for scroll or bounce, pull-to-refresh and pointer cancellation.
+- [x] **T4.6 Real-device check.** Test on an iPhone (Safari), an Android phone (Chrome) and a desktop browser. Watch for scroll or bounce, pull-to-refresh and pointer cancellation.
 
 ## Phase 5 — Game flow and timer (§5, §7)
 
