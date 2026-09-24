@@ -1,4 +1,4 @@
-import { decodeGridCode, encodeGridCode, GridCodeError } from '@tessel/engine';
+import { decodeGridCode, encodeGridCode, GridCodeError } from '@cranny/engine';
 import { Link, Navigate, useLocation, useParams } from 'react-router';
 import { PlayScreen } from '../play/PlayScreen.tsx';
 import styles from './GridPage.module.css';

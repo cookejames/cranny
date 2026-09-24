@@ -26,7 +26,7 @@ afterEach(() => {
 describe('routes', () => {
   it('shows Home at /', () => {
     renderAt('/');
-    expect(screen.getByRole('heading', { name: 'Tessel' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Cranny' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Play' })).toHaveAttribute('href', '/play');
   });
 
@@ -77,7 +77,7 @@ describe('routes', () => {
   it('explains a code from a newer version', () => {
     renderAt('/g/2000000');
     expect(
-      screen.getByText('This grid needs a newer version of Tessel. Refresh to update.'),
+      screen.getByText('This grid needs a newer version of Cranny. Refresh to update.'),
     ).toBeInTheDocument();
   });
 

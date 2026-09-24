@@ -1,4 +1,4 @@
-import { PIECE_IDS, PIECES, type PieceId } from '@tessel/engine';
+import { PIECE_IDS, PIECES, type PieceId } from '@cranny/engine';
 import type { CSSProperties } from 'react';
 import { Link } from 'react-router';
 import styles from './PlayHeader.module.css';

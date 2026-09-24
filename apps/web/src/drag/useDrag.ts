@@ -8,7 +8,7 @@ import {
   type Orientation,
   type PieceId,
   type Shape,
-} from '@tessel/engine';
+} from '@cranny/engine';
 import {
   useCallback,
   useEffect,

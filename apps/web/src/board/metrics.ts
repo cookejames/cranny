@@ -1,4 +1,4 @@
-import { BOARD_SIZE } from '@tessel/engine';
+import { BOARD_SIZE } from '@cranny/engine';
 import type { CSSProperties } from 'react';
 import { spanOf } from './outline.ts';
 

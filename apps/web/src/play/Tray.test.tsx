@@ -1,4 +1,4 @@
-import { PIECE_IDS, type Orientation, type PieceId } from '@tessel/engine';
+import { PIECE_IDS, type Orientation, type PieceId } from '@cranny/engine';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { Tray } from './Tray.tsx';

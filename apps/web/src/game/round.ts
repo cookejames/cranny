@@ -12,7 +12,7 @@ import {
   type Orientation,
   type PieceId,
   type Placement,
-} from '@tessel/engine';
+} from '@cranny/engine';
 
 /**
  * Where a round is (SPEC.md §5): before Start the board is hidden and nothing can be played;

@@ -1,4 +1,4 @@
-import { PIECES, shapeOf, type Orientation, type PieceId } from '@tessel/engine';
+import { PIECES, shapeOf, type Orientation, type PieceId } from '@cranny/engine';
 import type { CSSProperties } from 'react';
 import styles from './PieceShape.module.css';
 import { outlinePath, spanOf } from './outline.ts';

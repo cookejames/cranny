@@ -1,4 +1,4 @@
-import { generateGrid, PIECE_IDS, solve, type PieceId } from '@tessel/engine';
+import { generateGrid, PIECE_IDS, solve, type PieceId } from '@cranny/engine';
 import { useEffect, useReducer, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Board } from '../board/Board.tsx';

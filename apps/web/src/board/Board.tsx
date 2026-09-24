@@ -10,7 +10,7 @@ import {
   type BoardState,
   type Occupant,
   type PieceId,
-} from '@tessel/engine';
+} from '@cranny/engine';
 import {
   useId,
   type CSSProperties,

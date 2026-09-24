@@ -1,8 +1,8 @@
-# Tessel — v1 Specification
+# Cranny — v1 Specification
 
 ## 1. Summary
 
-Tessel is a solo timed puzzle game for the web. Each grid is a 6×6 board with 7 blocked squares. The player drags nine pieces (29 squares in total) onto the board to fill it exactly, as fast as possible. v1 is a web app (PWA-ready but online only) hosted on AWS at **https://tessel.cooke.ing**. There are no accounts, no backend and no monetisation; it is a personal project. v1 is solo only, but the rules engine is built so a multiplayer race can be added later without a rewrite.
+Cranny is a solo timed puzzle game for the web. Each grid is a 6×6 board with 7 blocked squares. The player drags nine pieces (29 squares in total) onto the board to fill it exactly, as fast as possible. v1 is a web app (PWA-ready but online only) hosted on AWS at **https://cranny.cooke.ing**. There are no accounts, no backend and no monetisation; it is a personal project. v1 is solo only, but the rules engine is built so a multiplayer race can be added later without a rewrite.
 
 ### In scope (v1)
 
@@ -45,7 +45,7 @@ Multiplayer race, offline/service worker, tap or two-finger rotation, keyboard/s
 ### Repository layout (pnpm workspaces)
 
 ```
-tessel/
+cranny/
   packages/engine/     # pure TypeScript rules engine (no DOM, no React)
   apps/web/            # React + TypeScript + Vite app
   infra/               # Terraform (AWS)
@@ -55,14 +55,14 @@ tessel/
 ```
 
 - Node 24 LTS and pnpm. TypeScript `strict` everywhere, pinned to 6.0.x because typescript-eslint does not yet support TypeScript 7. ESLint and Prettier.
-- `apps/web` depends on `@tessel/engine` through the workspace.
+- `apps/web` depends on `@cranny/engine` through the workspace.
 - The engine must stay framework-free so that a future Node multiplayer server or a native app can import it unchanged.
 
 ### Commands (to be created)
 
 - `pnpm install`
 - `pnpm dev`: Vite dev server for the web app.
-- `pnpm test`: all Vitest suites. `pnpm --filter @tessel/engine test -- -t "<name>"` runs a single test.
+- `pnpm test`: all Vitest suites. `pnpm --filter @cranny/engine test -- -t "<name>"` runs a single test.
 - `pnpm build`: production build to `apps/web/dist`.
 - `pnpm lint`, `pnpm typecheck`
 - `terraform -chdir=infra init|plan|apply`
@@ -109,8 +109,8 @@ type BoardState = { grid: Grid; placements: Partial<Record<PieceId, Placement>> 
 ### Grid codes
 
 - Format: 1 version character followed by 6 Crockford base32 characters (30-bit seed), e.g. `1K7QX2M`. Case-insensitive; `I/L` read as `1` and `O` as `0`. The single version character caps the scheme at version 31.
-- URL: `https://tessel.cooke.ing/g/1K7QX2M`
-- Decode errors: malformed code → "That grid link isn't valid". Unknown version → "This grid needs a newer version of Tessel. Refresh to update." Both offer "Play a new grid".
+- URL: `https://cranny.cooke.ing/g/1K7QX2M`
+- Decode errors: malformed code → "That grid link isn't valid". Unknown version → "This grid needs a newer version of Cranny. Refresh to update." Both offer "Play a new grid".
 
 ## 5. Screens and flow
 
@@ -125,7 +125,7 @@ Visual reference: `design/` (Home, Main, Complete). The Race screen is not built
 
 ### Home
 
-- Wordmark "Tessel", the tagline "Nine pieces. Seven blocked squares. One grid to fill." and the decorative solved board from the design.
+- Wordmark "Cranny", the tagline "Nine pieces. Seven blocked squares. One grid to fill." and the decorative solved board from the design.
 - A primary **Play** button (goes to `/play`).
 - A stats row with Best, Average and Solved (§8), hidden until there is at least one solve.
 - No Race or multiplayer card at all.
@@ -161,7 +161,7 @@ Based on `design/Complete.dc.html`:
 - A thumbnail of the solved board.
 - Stat cards: **Previous best** (or "—"), **Average** (last 10) and **Solved** (total). This replaces the design's "Streak".
 - **Next grid** (primary, goes to `/play`), **Share grid**, and **Home**.
-- **Share grid:** uses `navigator.share({ title: 'Tessel', text: 'I solved this Tessel grid in 1:08.4 — can you beat it?', url })` where supported, otherwise copies the same text and URL to the clipboard and shows a "Link copied" toast.
+- **Share grid:** uses `navigator.share({ title: 'Cranny', text: 'I solved this Cranny grid in 1:08.4 — can you beat it?', url })` where supported, otherwise copies the same text and URL to the clipboard and shows a "Link copied" toast.
 
 ### Reload and interruptions
 
@@ -201,7 +201,7 @@ Pointer Events are used throughout, handling only the primary pointer. The board
 
 ## 8. Stats (on the device only)
 
-- `localStorage['tessel.stats.v1'] = { solved: number, bestMs: number | null, recentMs: number[] }`, where `recentMs` holds the last 10 solve times, newest last.
+- `localStorage['cranny.stats.v1'] = { solved: number, bestMs: number | null, recentMs: number[] }`, where `recentMs` holds the last 10 solve times, newest last.
 - Only completed solves count. Skipped or abandoned grids are not recorded, and solves on shared grids count the same as any other.
 - **Average** is the mean of `recentMs`, shown once there is at least 1 solve.
 - **Best** is the minimum time over all solves.
@@ -227,12 +227,12 @@ Pointer Events are used throughout, handling only the primary pointer. The board
 ## 11. Infrastructure (AWS, Terraform in `infra/`)
 
 - **State:** S3 backend in an existing, manually created state bucket, with `use_lockfile = true` (Terraform ≥ 1.10 native S3 locking). Terraform is applied manually.
-- **Variables:** `domain_name = "tessel.cooke.ing"`, `zone_name = "cooke.ing"` (an existing Route 53 hosted zone, looked up with a `data` source), `region`.
+- **Variables:** `domain_name = "cranny.cooke.ing"`, `zone_name = "cooke.ing"` (an existing Route 53 hosted zone, looked up with a `data` source), `region`.
 - **Resources:**
   - A private S3 site bucket: all public access blocked, versioning on, SSE-S3 encryption.
   - A CloudFront distribution using **Origin Access Control**, a bucket policy that allows only that distribution, `default_root_object = index.html`, and HTTP → HTTPS redirect.
   - **SPA deep links:** custom error responses map 403 and 404 to `/index.html` with status **200**, so `/g/<code>` works.
-  - An ACM certificate for `tessel.cooke.ing` in **us-east-1** (aliased provider), validated through Route 53 DNS.
+  - An ACM certificate for `cranny.cooke.ing` in **us-east-1** (aliased provider), validated through Route 53 DNS.
   - Route 53 A and AAAA alias records pointing to the distribution.
   - A response headers policy with HSTS, `X-Content-Type-Options`, `Referrer-Policy` and a CSP allowing only self-hosted assets.
 - **Outputs:** bucket name and distribution ID (used by the deploy script).
@@ -275,4 +275,4 @@ Pointer Events are used throughout, handling only the primary pointer. The board
 
 ## 15. Decisions log (from the interview)
 
-Web first (PWA-ready, online only) · React + TS + Vite · pure TS engine package · solo only for v1, multiplayer-ready · trusted clients for the future race mode · no accounts · stats limited to best, average and solved, on the device · seeded random grids, no daily · no difficulty control · no hints or give-up · stopwatch with personal bests · clock starts on reveal and keeps running when the page is hidden · drag-only placement with the piece lifted above the finger · tap selects a tray piece for the Rotate/Flip buttons (tap or two-finger rotation later) · bad drops return the piece · placed pieces can be dragged to move them · picking pieces up is the undo · share links use seed + version codes, and all solves count toward stats · only solves count, skips aren't recorded · merged piece outlines for accessibility · completion celebration only (no sound or haptics) · keep the prototype layout · hide Race entirely · AWS S3 + CloudFront + ACM + Route 53 at tessel.cooke.ing, Terraform with S3 state, manual deploys · engine unit tests and component tests.
+Web first (PWA-ready, online only) · React + TS + Vite · pure TS engine package · solo only for v1, multiplayer-ready · trusted clients for the future race mode · no accounts · stats limited to best, average and solved, on the device · seeded random grids, no daily · no difficulty control · no hints or give-up · stopwatch with personal bests · clock starts on reveal and keeps running when the page is hidden · drag-only placement with the piece lifted above the finger · tap selects a tray piece for the Rotate/Flip buttons (tap or two-finger rotation later) · bad drops return the piece · placed pieces can be dragged to move them · picking pieces up is the undo · share links use seed + version codes, and all solves count toward stats · only solves count, skips aren't recorded · merged piece outlines for accessibility · completion celebration only (no sound or haptics) · keep the prototype layout · hide Race entirely · AWS S3 + CloudFront + ACM + Route 53 at cranny.cooke.ing, Terraform with S3 state, manual deploys · engine unit tests and component tests.

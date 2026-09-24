@@ -1,4 +1,4 @@
-import { newBoard, place, type Shape } from '@tessel/engine';
+import { newBoard, place, type Shape } from '@cranny/engine';
 import { describe, expect, it } from 'vitest';
 import { BOARD_SPAN, CELL_GAP } from '../board/metrics.ts';
 import {

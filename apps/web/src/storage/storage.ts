@@ -7,14 +7,14 @@ import {
   type Orientation,
   type PieceId,
   type Placement,
-} from '@tessel/engine';
+} from '@cranny/engine';
 
 // Device-only persistence (SPEC.md §5, §8). Storage can be missing, full, blocked (private
 // browsing, disabled cookies) or hold stale or hand-edited data, so every access is wrapped in
 // try/catch and every value read back is validated. The game must work without storage.
 
-export const STATS_KEY = 'tessel.stats.v1';
-export const ROUND_KEY = 'tessel.round.v1';
+export const STATS_KEY = 'cranny.stats.v1';
+export const ROUND_KEY = 'cranny.round.v1';
 /** How many recent solve times feed the average (SPEC.md §8). */
 export const RECENT_LIMIT = 10;
 

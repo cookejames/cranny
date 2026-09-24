@@ -1,4 +1,4 @@
-import { PIECE_IDS, PIECES, type Orientation, type PieceId } from '@tessel/engine';
+import { PIECE_IDS, PIECES, type Orientation, type PieceId } from '@cranny/engine';
 import type { MouseEvent, PointerEvent, Ref } from 'react';
 import { PieceShape } from '../board/PieceShape.tsx';
 import styles from './Tray.module.css';

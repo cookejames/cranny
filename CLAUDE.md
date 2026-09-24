@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Tessel is a puzzle game. Each round, place nine polyomino pieces on a 6×6 grid with 7 randomly blocked squares. Modes: solo against the clock, and later a multiplayer race where the first player to fill their grid wins. Every player in a race gets the same blocked squares.
+Cranny is a puzzle game. Each round, place nine polyomino pieces on a 6×6 grid with 7 randomly blocked squares. Modes: solo against the clock, and later a multiplayer race where the first player to fill their grid wins. Every player in a race gets the same blocked squares.
 
 Piece set (29 squares = 36 − 7 blocked, so a solved grid has no gaps): five 4-square pieces (I, O, T, S, L), two 3-square pieces (straight bar, corner), one domino, one single square. Pieces can be rotated and flipped.
 
@@ -18,13 +18,13 @@ Node 24 (`.nvmrc`), pnpm 12 (installed globally; version recorded in `packageMan
 - `pnpm dev`: Vite dev server for the web app; `pnpm build`: production build to `apps/web/dist`
 - `pnpm lint` / `pnpm typecheck` / `pnpm test` (all workspace packages)
 - `pnpm format` / `pnpm format:check` (Prettier)
-- Single package: `pnpm --filter @tessel/engine test`
-- Single test by name: `pnpm --filter @tessel/engine test -- -t "<name>"`
-- Solver timing: `pnpm --filter @tessel/engine bench` (plain Node; exits non-zero if over the desktop proxy for the phone budget)
+- Single package: `pnpm --filter @cranny/engine test`
+- Single test by name: `pnpm --filter @cranny/engine test -- -t "<name>"`
+- Solver timing: `pnpm --filter @cranny/engine bench` (plain Node; exits non-zero if over the desktop proxy for the phone budget)
 
 ## Layout
 
-pnpm workspaces: `packages/engine` (`@tessel/engine`, pure TS rules engine, no DOM or React) and `apps/web` (`@tessel/web`: Vite + React 19 + React Router 8, consumes the engine via `workspace:*`). The engine is consumed as TypeScript source (`exports` points at `src/index.ts`), so it has no build step.
+pnpm workspaces: `packages/engine` (`@cranny/engine`, pure TS rules engine, no DOM or React) and `apps/web` (`@cranny/web`: Vite + React 19 + React Router 8, consumes the engine via `workspace:*`). The engine is consumed as TypeScript source (`exports` points at `src/index.ts`), so it has no build step.
 
 TypeScript is pinned to 6.0.x: typescript-eslint doesn't support TypeScript 7 yet. Don't upgrade it until typescript-eslint does. Imports use explicit `.ts` extensions (`allowImportingTsExtensions`), and the engine has no DOM or Node types, so it can't use `performance`, `process` and similar globals.
 

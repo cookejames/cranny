@@ -28,7 +28,7 @@ export function HomePage() {
   return (
     <main className={styles.home}>
       <header className={styles.intro}>
-        <h1 className={styles.wordmark}>Tessel</h1>
+        <h1 className={styles.wordmark}>Cranny</h1>
         <p className={styles.tagline}>Nine pieces. Seven blocked squares. One grid to fill.</p>
       </header>
 

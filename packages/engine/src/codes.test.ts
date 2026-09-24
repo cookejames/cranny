@@ -62,7 +62,7 @@ describe('decodeGridCode', () => {
     expect(result).toBeInstanceOf(GridCodeError);
     expect((result as GridCodeError).kind).toBe('unsupported-version');
     expect((result as GridCodeError).message).toBe(
-      'This grid needs a newer version of Tessel. Refresh to update.',
+      'This grid needs a newer version of Cranny. Refresh to update.',
     );
   });
 });

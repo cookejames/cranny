@@ -1,4 +1,4 @@
-import { newBoard, place, solve, type BoardState } from '@tessel/engine';
+import { newBoard, place, solve, type BoardState } from '@cranny/engine';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { Board } from './Board.tsx';

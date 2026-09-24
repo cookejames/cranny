@@ -1,5 +1,5 @@
 {
-  "name": "tessel",
+  "name": "cranny",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@12.6.0",
@@ -7,7 +7,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "dev": "pnpm --filter @tessel/web dev",
+    "dev": "pnpm --filter @cranny/web dev",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",

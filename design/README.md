@@ -1,4 +1,6 @@
-# Tessel design
+# Cranny design
+
+The game was called Tessel when this was designed; the canvas and these files still use that name.
 
 Snapshot of the Tessel design canvas: https://claude.ai/artifact/8pro3gGQWsqro4nYQyjXVz
 

@@ -1,4 +1,4 @@
-import { BOARD_SIZE, generateGrid } from '@tessel/engine';
+import { BOARD_SIZE, generateGrid } from '@cranny/engine';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { StrictMode } from 'react';
 import { MemoryRouter } from 'react-router';

@@ -1,4 +1,4 @@
-import { PIECE_IDS, shapeOf } from '@tessel/engine';
+import { PIECE_IDS, shapeOf } from '@cranny/engine';
 import { describe, expect, it } from 'vitest';
 import { outlinePath, outlinePoints, spanOf } from './outline.ts';
 

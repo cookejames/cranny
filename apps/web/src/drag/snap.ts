@@ -7,7 +7,7 @@ import {
   type Orientation,
   type PieceId,
   type Shape,
-} from '@tessel/engine';
+} from '@cranny/engine';
 import { CELL_GAP, BOARD_SPAN } from '../board/metrics.ts';
 import type { ClientPoint } from './tap.ts';
 

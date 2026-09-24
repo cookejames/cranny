@@ -1,4 +1,4 @@
-import { PIECE_IDS, shapeOf, solve, type Orientation, type PieceId } from '@tessel/engine';
+import { PIECE_IDS, shapeOf, solve, type Orientation, type PieceId } from '@cranny/engine';
 import { describe, expect, it } from 'vitest';
 import {
   elapsedMs,

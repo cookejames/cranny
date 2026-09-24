@@ -8,7 +8,7 @@ import {
   type Orientation,
   type PieceId,
   type Placement,
-} from '@tessel/engine';
+} from '@cranny/engine';
 
 /** Every orientation, in the engine's order. */
 const ORIENTATIONS: Orientation[] = [false, true].flatMap((flip) =>

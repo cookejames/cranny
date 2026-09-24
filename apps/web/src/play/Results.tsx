@@ -1,4 +1,4 @@
-import type { BoardState } from '@tessel/engine';
+import type { BoardState } from '@cranny/engine';
 import { useCallback, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router';
 import { Board } from '../board/Board.tsx';

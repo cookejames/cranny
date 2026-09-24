@@ -5,7 +5,7 @@ export type ShareResult = 'shared' | 'copied' | 'cancelled' | 'failed';
 
 /** The message shared with a grid link (SPEC.md §5). */
 export const shareText = (ms: number) =>
-  `I solved this Tessel grid in ${formatTime(ms, { tenths: true })} — can you beat it?`;
+  `I solved this Cranny grid in ${formatTime(ms, { tenths: true })} — can you beat it?`;
 
 /**
  * Copies text the old way, by selecting it in a hidden textarea: the fallback where the
@@ -39,12 +39,12 @@ function copyBySelection(text: string): boolean {
  * link are copied to the clipboard (with the Clipboard API, or by selection where that's
  * missing). Never throws.
  *
- * @param url - The grid's absolute link, e.g. `https://tessel.cooke.ing/g/1XDWT5H`.
+ * @param url - The grid's absolute link, e.g. `https://cranny.cooke.ing/g/1XDWT5H`.
  */
 export async function shareGrid(text: string, url: string): Promise<ShareResult> {
   if (typeof navigator.share === 'function') {
     try {
-      await navigator.share({ title: 'Tessel', text, url });
+      await navigator.share({ title: 'Cranny', text, url });
       return 'shared';
     } catch (error) {
       // The player closed the share sheet: nothing to report.

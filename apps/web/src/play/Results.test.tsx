@@ -1,4 +1,4 @@
-import { newBoard } from '@tessel/engine';
+import { newBoard } from '@cranny/engine';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -69,8 +69,8 @@ describe('Results', () => {
     renderResults();
     await act(() => fireEvent.click(screen.getByRole('button', { name: 'Share grid' })));
     expect(share).toHaveBeenCalledWith({
-      title: 'Tessel',
-      text: 'I solved this Tessel grid in 1:08.4 — can you beat it?',
+      title: 'Cranny',
+      text: 'I solved this Cranny grid in 1:08.4 — can you beat it?',
       url: `${window.location.origin}/g/1XDWT5H`,
     });
     expect(screen.getByRole('status')).toBeEmptyDOMElement();
@@ -83,7 +83,7 @@ describe('Results', () => {
     renderResults();
     await act(() => fireEvent.click(screen.getByRole('button', { name: 'Share grid' })));
     expect(writeText).toHaveBeenCalledWith(
-      `I solved this Tessel grid in 1:08.4 — can you beat it? ${window.location.origin}/g/1XDWT5H`,
+      `I solved this Cranny grid in 1:08.4 — can you beat it? ${window.location.origin}/g/1XDWT5H`,
     );
     expect(screen.getByRole('status')).toHaveTextContent('Link copied');
     act(() => vi.advanceTimersByTime(TOAST_MS));

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { shareGrid, shareText } from './share.ts';
 
-const URL = 'https://tessel.cooke.ing/g/1XDWT5H';
+const URL = 'https://cranny.cooke.ing/g/1XDWT5H';
 
 /** Stubs `navigator.share` and `navigator.clipboard.writeText`; pass undefined to leave one out. */
 function stubNavigator(
@@ -22,13 +22,13 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe('shareGrid', () => {
   it('writes the message from the spec', () => {
-    expect(shareText(68_400)).toBe('I solved this Tessel grid in 1:08.4 — can you beat it?');
+    expect(shareText(68_400)).toBe('I solved this Cranny grid in 1:08.4 — can you beat it?');
   });
 
   it('uses the share sheet where there is one', async () => {
     const nav = stubNavigator(() => Promise.resolve());
     await expect(shareGrid('Solved!', URL)).resolves.toBe('shared');
-    expect(nav.share).toHaveBeenCalledWith({ title: 'Tessel', text: 'Solved!', url: URL });
+    expect(nav.share).toHaveBeenCalledWith({ title: 'Cranny', text: 'Solved!', url: URL });
     expect(nav.clipboard.writeText).not.toHaveBeenCalled();
   });
 

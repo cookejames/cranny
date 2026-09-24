@@ -1,4 +1,4 @@
-import { isSolved } from '@tessel/engine';
+import { isSolved } from '@cranny/engine';
 import { describe, expect, it } from 'vitest';
 import { boardFromRows, SHOWCASE_BOARD } from './showcase.ts';
 

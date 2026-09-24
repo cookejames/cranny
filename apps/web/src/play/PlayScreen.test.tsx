@@ -1,4 +1,4 @@
-import { generateGrid } from '@tessel/engine';
+import { generateGrid } from '@cranny/engine';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';

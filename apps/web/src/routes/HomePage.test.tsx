@@ -15,7 +15,7 @@ const renderHome = () =>
 describe('HomePage', () => {
   it('shows the wordmark, tagline and Play, with a decorative board', () => {
     renderHome();
-    expect(screen.getByRole('heading', { name: 'Tessel' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Cranny' })).toBeInTheDocument();
     expect(
       screen.getByText('Nine pieces. Seven blocked squares. One grid to fill.'),
     ).toBeInTheDocument();

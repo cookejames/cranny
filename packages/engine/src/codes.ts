@@ -64,7 +64,7 @@ export function decodeGridCode(code: string): { version: number; seed: number } 
   if (!SUPPORTED_VERSIONS.includes(version)) {
     return new GridCodeError(
       'unsupported-version',
-      'This grid needs a newer version of Tessel. Refresh to update.',
+      'This grid needs a newer version of Cranny. Refresh to update.',
     );
   }
   const seed = seedValues.reduce((acc, v) => acc * 32 + v, 0);

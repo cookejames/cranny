@@ -1,4 +1,4 @@
-import { CURRENT_VERSION, encodeGridCode, randomSeed } from '@tessel/engine';
+import { CURRENT_VERSION, encodeGridCode, randomSeed } from '@cranny/engine';
 import { useState } from 'react';
 import { Navigate } from 'react-router';
 import type { DealtState } from './GridPage.tsx';
