@@ -8,3 +8,5 @@ Tessel is a puzzle game. Each round, place nine polyomino pieces on a 6×6 grid 
 
 Piece set (29 squares = 36 − 7 blocked, so a solved grid has no gaps): five 4-square pieces (I, O, T, S, L), two 3-square pieces (straight bar, corner), one domino, one single square. Pieces can be rotated and flipped.
 
+
+Build spec: see SPEC.md.
