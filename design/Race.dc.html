@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tessel – Race</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&amp;family=Instrument+Sans:wght@400;500;600&amp;family=DM+Mono:wght@500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Instrument Sans',system-ui,sans-serif;background:#F3EFE6;color:#1D1B18}
+a{color:#1D1B18}a:hover{color:#5E574C}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 40px 20px 24px; display: flex; flex-direction: column; gap: 16px; background: #F3EFE6; color: #1D1B18; font-family: 'Instrument Sans', system-ui, sans-serif;">
+
+<div style="display: flex; align-items: center; gap: 8px; height: 44px;">
+<a href="Home.dc.html" aria-label="Leave race" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 12px; color: #1D1B18;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
+</a>
+<div style="flex-grow: 1; display: flex; flex-direction: column;">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #5E574C;">Race · 4 players</span>
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px; font-weight: 800; line-height: 1.1;">Round 3</span>
+</div>
+<div style="font-family: 'DM Mono', ui-monospace, monospace; font-size: 30px; font-weight: 500; letter-spacing: -0.02em;">0:42</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;">
+<sc-for list="{{rivals}}" as="rv" hint-placeholder-count="3">
+<div style="padding: 10px 8px; border-radius: 14px; display: flex; flex-direction: column; align-items: center; gap: 8px; background: {{rv.cardBg}}; border: {{rv.cardBorder}};">
+<div style="width: 86px; height: 86px; box-sizing: border-box; padding: 4px; background: #D6CCB9; border-radius: 8px; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 2px;">
+<sc-for list="{{rv.cells}}" as="c" hint-placeholder-count="36">
+<div style="border-radius: 2px; background: {{c.bg}};"></div>
+</sc-for>
+</div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
+<span style="font-size: 13px; font-weight: 600;">{{rv.name}}</span>
+<span style="font-family: 'DM Mono', ui-monospace, monospace; font-size: 13px; color: #5E574C;">{{rv.count}} / 9</span>
+</div>
+</div>
+</sc-for>
+</div>
+
+<div style="display: flex; align-items: center; gap: 12px;">
+<span style="font-size: 14px; font-weight: 600; flex-grow: 1;">Your grid · 5 of 9</span>
+<span style="font-size: 13px; font-weight: 600; color: #8A3B12;">Player 2 is ahead</span>
+</div>
+
+<div style="align-self: center; width: 320px; height: 320px; box-sizing: border-box; padding: 8px; background: #D6CCB9; border-radius: 16px; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px;">
+<sc-for list="{{mine}}" as="cell" hint-placeholder-count="36">
+<div style="border-radius: 6px; display: flex; align-items: center; justify-content: center; background: {{cell.bg}};">
+<sc-if value="{{cell.blocked}}" hint-placeholder-val="{{false}}">
+<span style="width: 12px; height: 12px; border-radius: 6px; background: #4A453D;"></span>
+</sc-if>
+</div>
+</sc-for>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px;">
+<sc-for list="{{tray}}" as="p" hint-placeholder-count="4">
+<button type="button" aria-label="{{p.name}}" style="height: 76px; box-sizing: border-box; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; background: {{p.bg}}; border: {{p.border}};">
+<div style="display: grid; gap: 2px; grid-template-columns: {{p.grid}};">
+<sc-for list="{{p.mini}}" as="m" hint-placeholder-count="4">
+<span style="width: 11px; height: 11px; border-radius: 2px; background: {{m.fill}};"></span>
+</sc-for>
+</div>
+</button>
+</sc-for>
+</div>
+
+<div style="display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; color: #5E574C; margin-top: auto;">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"></rect><circle cx="12" cy="12" r="2.5"></circle></svg>
+Every player gets the same seven blocked squares
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const colors = { i4: '#3F6FA8', o4: '#E3A87C', t4: '#8C5BA6', s4: '#2F8F85', l4: '#C4557A', i3: '#D1604B', v3: '#6E9E6A', d1: '#E0A43A', m1: '#7FA7C9' };
+    const grid = [
+      'd1 v3 v3 X o4 o4',
+      'd1 v3 X t4 o4 o4',
+      'm1 X l4 t4 t4 i4',
+      'X X l4 t4 s4 i4',
+      'X l4 l4 s4 s4 i4',
+      'i3 i3 i3 s4 X i4'
+    ].join(' ').split(' ');
+    const board = (have) => grid.map(k => {
+      if (k === 'X') return { bg: '#26231F', blocked: true };
+      return { bg: have.indexOf(k) >= 0 ? colors[k] : '#EAE3D5', blocked: false };
+    });
+    const players = [
+      { name: 'Player 2', have: ['i4', 'o4', 't4', 's4', 'l4', 'i3', 'd1'] },
+      { name: 'Player 3', have: ['i4', 'o4', 't4'] },
+      { name: 'Player 4', have: ['i4', 's4', 'l4', 'o4', 'v3'] }
+    ];
+    const rivals = players.map((p, i) => ({
+      name: p.name,
+      count: p.have.length,
+      cells: board(p.have),
+      cardBg: i === 0 ? '#FFFDF8' : '#EAE3D5',
+      cardBorder: i === 0 ? '2px solid #C2410C' : '2px solid transparent'
+    }));
+    const shapes = [
+      { id: 'i3', name: 'Bar, 3 squares', rows: ['XXX'] },
+      { id: 'v3', name: 'Corner, 3 squares', rows: ['X.', 'XX'] },
+      { id: 'd1', name: 'Domino, 2 squares', rows: ['XX'] },
+      { id: 'm1', name: 'Single, 1 square', rows: ['X'] }
+    ];
+    const tray = shapes.map((s, i) => ({
+      name: s.name,
+      grid: 'repeat(' + s.rows[0].length + ', 11px)',
+      mini: s.rows.join('').split('').map(ch => ({ fill: ch === 'X' ? colors[s.id] : 'transparent' })),
+      bg: i === 0 ? '#FFFDF8' : '#EAE3D5',
+      border: i === 0 ? '2px solid #1D1B18' : '2px solid transparent'
+    }));
+    return { rivals, mine: board(['i4', 'o4', 't4', 's4', 'l4']), tray };
+  }
+}
+</script>
+</body>
+</html>

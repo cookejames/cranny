@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tessel – Beat the clock</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&amp;family=Instrument+Sans:wght@400;500;600&amp;family=DM+Mono:wght@500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Instrument Sans',system-ui,sans-serif;background:#F3EFE6;color:#1D1B18}
+a{color:#1D1B18}a:hover{color:#5E574C}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 40px 20px 20px; display: flex; flex-direction: column; gap: 14px; background: #F3EFE6; color: #1D1B18; font-family: 'Instrument Sans', system-ui, sans-serif;">
+
+<div style="display: flex; align-items: center; gap: 8px; height: 44px;">
+<a href="Home.dc.html" aria-label="Home" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 12px; color: #1D1B18;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
+</a>
+<div style="flex-grow: 1; display: flex; flex-direction: column;">
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #5E574C;">{{modeLabel}}</span>
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px; font-weight: 800; line-height: 1.1;">Round {{round}}</span>
+</div>
+<div role="timer" aria-label="{{timerAria}}" style="font-family: 'DM Mono', ui-monospace, monospace; font-size: 30px; font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: {{timerColor}};">{{timeText}}</div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 12px; height: 20px;">
+<span style="font-size: 14px; font-weight: 500; color: #5E574C; flex-grow: 1;">{{placedCount}} of 9 placed</span>
+<div style="display: flex; gap: 4px;">
+<sc-for list="{{pips}}" as="pip" hint-placeholder-count="9">
+<div style="width: 14px; height: 6px; border-radius: 3px; background: {{pip.bg}};"></div>
+</sc-for>
+</div>
+</div>
+
+<div onMouseLeave="{{leave}}" style="position: relative; width: 350px; height: 350px; box-sizing: border-box; padding: 8px; background: #D6CCB9; border-radius: 16px; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px;">
+<sc-for list="{{cells}}" as="cell" hint-placeholder-count="36">
+<button type="button" aria-label="{{cell.label}}" onClick="{{cell.click}}" onMouseEnter="{{cell.enter}}" style="height: 51px; border: 0; padding: 0; border-radius: 7px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: {{cell.bg}}; box-shadow: {{cell.shadow}};">
+<sc-if value="{{cell.blocked}}" hint-placeholder-val="{{false}}">
+<span style="width: 14px; height: 14px; border-radius: 7px; background: #4A453D; box-shadow: inset 0 1px 0 #6B655A;"></span>
+</sc-if>
+</button>
+</sc-for>
+
+<sc-if value="{{done}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 16px; background: rgba(29, 27, 24, 0.9); color: #F3EFE6; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
+<span style="font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #D9CFBD;">Grid complete</span>
+<span style="font-family: 'DM Mono', ui-monospace, monospace; font-size: 56px; font-weight: 500; letter-spacing: -0.03em;">{{timeText}}</span>
+<span style="font-size: 14px; color: #D9CFBD;">Best this session {{bestText}}</span>
+<div style="display: flex; gap: 10px; margin-top: 14px;">
+<button type="button" onClick="{{newRound}}" style="height: 48px; padding: 0 22px; border: 0; border-radius: 12px; background: #F3EFE6; color: #1D1B18; font-size: 16px; font-weight: 600; cursor: pointer;">Next round</button>
+<a href="Complete.dc.html" style="height: 48px; padding: 0 18px; border-radius: 12px; border: 1.5px solid #6B655A; color: #F3EFE6; font-size: 16px; font-weight: 600; display: flex; align-items: center; text-decoration: none;">Results</a>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{timeUp}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 16px; background: rgba(29, 27, 24, 0.9); color: #F3EFE6; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
+<span style="font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #F2A38F;">Time's up</span>
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 36px; font-weight: 800;">{{placedCount}} of 9 placed</span>
+<button type="button" onClick="{{newRound}}" style="margin-top: 14px; height: 48px; padding: 0 22px; border: 0; border-radius: 12px; background: #F3EFE6; color: #1D1B18; font-size: 16px; font-weight: 600; cursor: pointer;">Try a new grid</button>
+</div>
+</sc-if>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px;">
+<button type="button" onClick="{{rotate}}" style="height: 44px; border: 0; border-radius: 12px; background: #1D1B18; color: #F3EFE6; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer;">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.6-5.9"></path><path d="M20 4v5h-5"></path></svg>
+Rotate
+</button>
+<button type="button" onClick="{{flip}}" style="height: 44px; border: 0; border-radius: 12px; background: #1D1B18; color: #F3EFE6; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer;">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"></path><path d="M8 7l-5 5 5 5"></path><path d="M16 7l5 5-5 5"></path></svg>
+Flip
+</button>
+<button type="button" onClick="{{clear}}" style="height: 44px; border: 1.5px solid #CFC5B2; border-radius: 12px; background: transparent; color: #1D1B18; font-size: 14px; font-weight: 600; cursor: pointer;">Clear</button>
+<button type="button" onClick="{{newRound}}" style="height: 44px; border: 1.5px solid #CFC5B2; border-radius: 12px; background: transparent; color: #1D1B18; font-size: 14px; font-weight: 600; cursor: pointer;">New grid</button>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;">
+<sc-for list="{{tray}}" as="p" hint-placeholder-count="9">
+<button type="button" aria-pressed="{{p.selected}}" aria-label="{{p.aria}}" onClick="{{p.pick}}" style="height: 84px; box-sizing: border-box; border-radius: 12px; padding: 8px 4px 6px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; cursor: pointer; background: {{p.tileBg}}; border: {{p.tileBorder}}; opacity: {{p.opacity}};">
+<div style="flex-grow: 1; display: flex; align-items: center; justify-content: center;">
+<div style="display: grid; gap: 2px; grid-template-columns: {{p.grid}};">
+<sc-for list="{{p.mini}}" as="m" hint-placeholder-count="4">
+<span style="width: 11px; height: 11px; border-radius: 2px; background: {{m.fill}};"></span>
+</sc-for>
+</div>
+</div>
+<span style="font-size: 11px; font-weight: 600; color: #5E574C;">{{p.status}}</span>
+</button>
+</sc-for>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"timerMode":{"editor":"enum","options":["stopwatch","countdown"],"default":"stopwatch","section":"Timer"},"limit":{"editor":"int","min":30,"max":600,"step":15,"unit":"s","default":180,"section":"Timer"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  defs() {
+    if (!this._defs) {
+      this._defs = [
+        { id: 'i4', name: 'Long bar', color: '#3F6FA8', cells: [[0,0],[0,1],[0,2],[0,3]] },
+        { id: 'o4', name: 'Square', color: '#E3A87C', cells: [[0,0],[0,1],[1,0],[1,1]] },
+        { id: 't4', name: 'Tee', color: '#8C5BA6', cells: [[0,0],[0,1],[0,2],[1,1]] },
+        { id: 's4', name: 'Zig', color: '#2F8F85', cells: [[0,1],[0,2],[1,0],[1,1]] },
+        { id: 'l4', name: 'Ell', color: '#C4557A', cells: [[0,0],[1,0],[2,0],[2,1]] },
+        { id: 'i3', name: 'Bar', color: '#D1604B', cells: [[0,0],[0,1],[0,2]] },
+        { id: 'v3', name: 'Corner', color: '#6E9E6A', cells: [[0,0],[1,0],[1,1]] },
+        { id: 'd1', name: 'Domino', color: '#E0A43A', cells: [[0,0],[0,1]] },
+        { id: 'm1', name: 'Single', color: '#7FA7C9', cells: [[0,0]] }
+      ];
+    }
+    return this._defs;
+  }
+  norm(cs) {
+    const mr = Math.min.apply(null, cs.map(c => c[0]));
+    const mc = Math.min.apply(null, cs.map(c => c[1]));
+    return cs.map(c => [c[0] - mr, c[1] - mc]).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  }
+  shape(cells, rot, flip) {
+    let cs = cells.map(c => [c[0], c[1]]);
+    if (flip) cs = cs.map(c => [c[0], -c[1]]);
+    for (let i = 0; i < rot; i++) cs = cs.map(c => [c[1], -c[0]]);
+    return this.norm(cs);
+  }
+  orients(cells) {
+    const out = [], seen = {};
+    for (let f = 0; f < 2; f++) for (let r = 0; r < 4; r++) {
+      const s = this.shape(cells, r, f === 1), k = JSON.stringify(s);
+      if (!seen[k]) { seen[k] = 1; out.push(s); }
+    }
+    return out;
+  }
+  st() {
+    const s = this.state || {};
+    return {
+      blocked: s.blocked || [3, 8, 13, 18, 19, 24, 34],
+      placed: s.placed || {},
+      orient: s.orient || {},
+      sel: s.sel === undefined ? 'i4' : s.sel,
+      hover: s.hover === undefined ? null : s.hover,
+      elapsed: s.elapsed || 0,
+      round: s.round || 1,
+      done: !!s.done,
+      best: s.best === undefined ? null : s.best
+    };
+  }
+  countdown() { return (this.props.timerMode ?? 'stopwatch') === 'countdown'; }
+  limit() { return this.props.limit ?? 180; }
+  timeUp(s) { return this.countdown() && !s.done && s.elapsed >= this.limit(); }
+  componentDidMount() {
+    this._t = setInterval(() => {
+      const s = this.st();
+      if (s.done || this.timeUp(s)) return;
+      this.setState({ elapsed: s.elapsed + 1 });
+    }, 1000);
+  }
+  componentWillUnmount() { clearInterval(this._t); }
+  occ(placed) {
+    const o = {};
+    Object.keys(placed).forEach(id => placed[id].forEach(i => { o[i] = id; }));
+    return o;
+  }
+  footprint(s, id, idx, occ) {
+    const d = this.defs().find(x => x.id === id);
+    const o = s.orient[id] || { rot: 0, flip: false };
+    const sh = this.shape(d.cells, o.rot, o.flip);
+    const rows = Math.max.apply(null, sh.map(c => c[0])) + 1;
+    const cols = Math.max.apply(null, sh.map(c => c[1])) + 1;
+    const cr = (rows - 1) / 2, cc = (cols - 1) / 2;
+    let a = sh[0], best = 99;
+    sh.forEach(c => { const dd = Math.abs(c[0] - cr) + Math.abs(c[1] - cc); if (dd < best) { best = dd; a = c; } });
+    const r0 = Math.floor(idx / 6), c0 = idx % 6;
+    const cells = [];
+    let valid = true;
+    sh.forEach(c => {
+      const r = c[0] - a[0] + r0, k = c[1] - a[1] + c0;
+      if (r < 0 || r > 5 || k < 0 || k > 5) { valid = false; return; }
+      const i = r * 6 + k;
+      if (s.blocked.indexOf(i) >= 0 || occ[i]) valid = false;
+      cells.push(i);
+    });
+    return { cells, valid };
+  }
+  clickCell(i) {
+    const s = this.st();
+    if (s.done || this.timeUp(s) || s.blocked.indexOf(i) >= 0) return;
+    const occ = this.occ(s.placed);
+    if (occ[i]) {
+      const placed = Object.assign({}, s.placed);
+      delete placed[occ[i]];
+      this.setState({ placed, sel: occ[i], hover: i });
+      return;
+    }
+    if (!s.sel || s.placed[s.sel]) return;
+    const fp = this.footprint(s, s.sel, i, occ);
+    if (!fp.valid) return;
+    const placed = Object.assign({}, s.placed);
+    placed[s.sel] = fp.cells;
+    const next = this.defs().find(d => !placed[d.id]);
+    const done = Object.keys(placed).length === 9;
+    const upd = { placed, sel: next ? next.id : null, done };
+    if (done) upd.best = s.best === null ? s.elapsed : Math.min(s.best, s.elapsed);
+    this.setState(upd);
+  }
+  pick(id) {
+    const s = this.st();
+    if (s.done || this.timeUp(s)) return;
+    if (s.placed[id]) {
+      const placed = Object.assign({}, s.placed);
+      delete placed[id];
+      this.setState({ placed, sel: id });
+    } else {
+      this.setState({ sel: id });
+    }
+  }
+  turn(kind) {
+    const s = this.st();
+    if (!s.sel) return;
+    const o = Object.assign({ rot: 0, flip: false }, s.orient[s.sel]);
+    if (kind === 'rot') o.rot = (o.rot + 1) % 4; else o.flip = !o.flip;
+    const orient = Object.assign({}, s.orient);
+    orient[s.sel] = o;
+    this.setState({ orient });
+  }
+  solvable(blocked) {
+    const defs = this.defs();
+    const ors = defs.map(d => this.orients(d.cells));
+    const g = new Array(36).fill(0);
+    blocked.forEach(i => { g[i] = 1; });
+    const used = new Array(defs.length).fill(false);
+    let n = 0;
+    const rec = () => {
+      if (++n > 60000) return false;
+      const e = g.indexOf(0);
+      if (e < 0) return true;
+      const er = Math.floor(e / 6), ec = e % 6;
+      for (let k = 0; k < defs.length; k++) {
+        if (used[k]) continue;
+        for (const o of ors[k]) {
+          const pos = [];
+          let ok = true;
+          for (const c of o) {
+            const r = c[0] - o[0][0] + er, q = c[1] - o[0][1] + ec;
+            if (r < 0 || r > 5 || q < 0 || q > 5 || g[r * 6 + q]) { ok = false; break; }
+            pos.push(r * 6 + q);
+          }
+          if (!ok) continue;
+          pos.forEach(p => { g[p] = 1; });
+          used[k] = true;
+          if (rec()) return true;
+          pos.forEach(p => { g[p] = 0; });
+          used[k] = false;
+        }
+      }
+      return false;
+    };
+    return rec();
+  }
+  newBlocked() {
+    for (let t = 0; t < 300; t++) {
+      const set = {};
+      const b = [];
+      while (b.length < 7) { const i = Math.floor(Math.random() * 36); if (!set[i]) { set[i] = 1; b.push(i); } }
+      if (this.solvable(b)) return b;
+    }
+    return [3, 8, 13, 18, 19, 24, 34];
+  }
+  fmt(sec) {
+    const v = Math.max(0, sec);
+    const m = Math.floor(v / 60), x = v % 60;
+    return m + ':' + (x < 10 ? '0' : '') + x;
+  }
+  renderVals() {
+    const s = this.st();
+    const defs = this.defs();
+    const byId = {};
+    defs.forEach(d => { byId[d.id] = d; });
+    const occ = this.occ(s.placed);
+    const timeUp = this.timeUp(s);
+    const active = !s.done && !timeUp;
+    let fp = null;
+    if (active && s.sel && !s.placed[s.sel] && s.hover !== null && s.blocked.indexOf(s.hover) < 0 && !occ[s.hover]) {
+      fp = this.footprint(s, s.sel, s.hover, occ);
+    }
+    const cells = [];
+    for (let i = 0; i < 36; i++) {
+      const r = Math.floor(i / 6) + 1, c = (i % 6) + 1;
+      let bg = '#EAE3D5', shadow = 'none', what = 'empty', blocked = false;
+      if (s.blocked.indexOf(i) >= 0) { bg = '#26231F'; blocked = true; what = 'blocked'; }
+      else if (occ[i]) { bg = byId[occ[i]].color; what = byId[occ[i]].name; }
+      if (fp && fp.cells.indexOf(i) >= 0) {
+        const col = fp.valid ? byId[s.sel].color : '#B42318';
+        shadow = 'inset 0 0 0 3px ' + col;
+        if (fp.valid) bg = byId[s.sel].color + '66';
+      }
+      cells.push({
+        bg, shadow, blocked,
+        label: 'Row ' + r + ', column ' + c + ': ' + what,
+        click: () => this.clickCell(i),
+        enter: () => { if (this.st().hover !== i) this.setState({ hover: i }); }
+      });
+    }
+    const tray = defs.map(d => {
+      const o = s.orient[d.id] || { rot: 0, flip: false };
+      const sh = this.shape(d.cells, o.rot, o.flip);
+      const rows = Math.max.apply(null, sh.map(c => c[0])) + 1;
+      const cols = Math.max.apply(null, sh.map(c => c[1])) + 1;
+      const has = {};
+      sh.forEach(c => { has[c[0] + ',' + c[1]] = 1; });
+      const mini = [];
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) mini.push({ fill: has[r + ',' + c] ? d.color : 'transparent' });
+      const placed = !!s.placed[d.id];
+      const selected = s.sel === d.id && !placed;
+      return {
+        mini, selected,
+        grid: 'repeat(' + cols + ', 11px)',
+        tileBg: selected ? '#FFFDF8' : '#EAE3D5',
+        tileBorder: selected ? '2px solid #1D1B18' : '2px solid transparent',
+        opacity: placed ? '0.45' : '1',
+        status: placed ? 'Placed' : d.name + ' · ' + d.cells.length,
+        aria: d.name + ', ' + d.cells.length + ' squares' + (placed ? ', placed' : ''),
+        pick: () => this.pick(d.id)
+      };
+    });
+    const cd = this.countdown();
+    const shown = cd ? this.limit() - s.elapsed : s.elapsed;
+    const lowTime = cd && active && shown <= 15;
+    return {
+      cells, tray,
+      pips: defs.map(d => ({ bg: s.placed[d.id] ? d.color : '#D6CCB9' })),
+      placedCount: Object.keys(s.placed).length,
+      round: s.round,
+      modeLabel: cd ? 'Beat the clock · ' + this.fmt(this.limit()) : 'Beat the clock',
+      timeText: this.fmt(s.done ? s.elapsed : shown),
+      timerAria: (cd ? 'Time left ' : 'Time ') + this.fmt(shown),
+      timerColor: lowTime ? '#B42318' : '#1D1B18',
+      bestText: s.best === null ? '–' : this.fmt(s.best),
+      done: s.done,
+      timeUp,
+      leave: () => { if (this.st().hover !== null) this.setState({ hover: null }); },
+      rotate: () => this.turn('rot'),
+      flip: () => this.turn('flip'),
+      clear: () => { if (!this.st().done) this.setState({ placed: {}, hover: null }); },
+      newRound: () => {
+        const cur = this.st();
+        this.setState({ blocked: this.newBlocked(), placed: {}, orient: {}, sel: 'i4', hover: null, elapsed: 0, round: cur.round + 1, done: false });
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

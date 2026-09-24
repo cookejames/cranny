@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tessel – Round complete</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&amp;family=Instrument+Sans:wght@400;500;600&amp;family=DM+Mono:wght@500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Instrument Sans',system-ui,sans-serif;background:#1D1B18;color:#F3EFE6}
+a{color:#F3EFE6}a:hover{color:#D9CFBD}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 64px 24px 32px; display: flex; flex-direction: column; align-items: center; gap: 24px; background: #1D1B18; color: #F3EFE6; font-family: 'Instrument Sans', system-ui, sans-serif;">
+
+<div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+<span style="font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #D9CFBD;">Round 7 · Beat the clock</span>
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 40px; font-weight: 800; letter-spacing: -0.02em;">Grid complete</h1>
+</div>
+
+<div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+<span style="font-family: 'DM Mono', ui-monospace, monospace; font-size: 84px; font-weight: 500; letter-spacing: -0.04em; line-height: 1;">1:08</span>
+<span style="font-size: 14px; font-weight: 600; color: #9FD3A0; display: flex; align-items: center; gap: 6px;">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"></path><path d="M6 11l6-6 6 6"></path></svg>
+New personal best
+</span>
+</div>
+
+<div style="width: 220px; height: 220px; box-sizing: border-box; padding: 6px; background: #3A3630; border-radius: 14px; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px;">
+<sc-for list="{{cells}}" as="cell" hint-placeholder-count="36">
+<div style="border-radius: 4px; background: {{cell.bg}};"></div>
+</sc-for>
+</div>
+
+<div style="align-self: stretch; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;">
+<div style="padding: 14px 12px; border-radius: 12px; background: #2A2723; display: flex; flex-direction: column; gap: 4px;">
+<span style="font-size: 12px; font-weight: 600; color: #BDB3A2;">Previous best</span>
+<span style="font-family: 'DM Mono', ui-monospace, monospace; font-size: 22px;">1:14</span>
+</div>
+<div style="padding: 14px 12px; border-radius: 12px; background: #2A2723; display: flex; flex-direction: column; gap: 4px;">
+<span style="font-size: 12px; font-weight: 600; color: #BDB3A2;">Average</span>
+<span style="font-family: 'DM Mono', ui-monospace, monospace; font-size: 22px;">1:31</span>
+</div>
+<div style="padding: 14px 12px; border-radius: 12px; background: #2A2723; display: flex; flex-direction: column; gap: 4px;">
+<span style="font-size: 12px; font-weight: 600; color: #BDB3A2;">Streak</span>
+<span style="font-family: 'DM Mono', ui-monospace, monospace; font-size: 22px;">7</span>
+</div>
+</div>
+
+<div style="align-self: stretch; margin-top: auto; display: flex; flex-direction: column; gap: 10px;">
+<a href="Main.dc.html" style="height: 56px; border-radius: 14px; background: #F3EFE6; color: #1D1B18; font-size: 17px; font-weight: 600; display: flex; align-items: center; justify-content: center; text-decoration: none;">Next round</a>
+<a href="Home.dc.html" style="height: 52px; border-radius: 14px; border: 1.5px solid #4A453D; color: #F3EFE6; font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; text-decoration: none;">Home</a>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const colors = { i4: '#3F6FA8', o4: '#E3A87C', t4: '#8C5BA6', s4: '#2F8F85', l4: '#C4557A', i3: '#D1604B', v3: '#6E9E6A', d1: '#E0A43A', m1: '#7FA7C9' };
+    const grid = [
+      'd1 v3 v3 X o4 o4',
+      'd1 v3 X t4 o4 o4',
+      'm1 X l4 t4 t4 i4',
+      'X X l4 t4 s4 i4',
+      'X l4 l4 s4 s4 i4',
+      'i3 i3 i3 s4 X i4'
+    ];
+    const cells = [];
+    grid.forEach(row => row.split(' ').forEach(k => { cells.push({ bg: k === 'X' ? '#141210' : colors[k] }); }));
+    return { cells };
+  }
+}
+</script>
+</body>
+</html>

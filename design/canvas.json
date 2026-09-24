@@ -1,0 +1,71 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Complete.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Round complete",
+      "w": 390,
+      "x": 940,
+      "y": 0
+    },
+    "Home.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Home",
+      "w": 390,
+      "x": 0,
+      "y": 0
+    },
+    "Main.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Beat the clock (playable)",
+      "w": 390,
+      "x": 470,
+      "y": 0
+    },
+    "Race.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Race (multiplayer)",
+      "w": 390,
+      "x": 1410,
+      "y": 0
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-09-24T09:26:05.967Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "heading": {
+      "kind": "title1",
+      "maxW": 1800,
+      "text": "Tessel — core screens",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "pieces": {
+      "fill": "orange",
+      "text": "Piece set (29 squares = 36 − 7 blocked)\n\nLong bar 4 · Square 4 · Tee 4 · Zig 4 · Ell 4\nBar 3 · Corner 3\nDomino 2 · Single 1\n\nWith 7 random blockers about 1 in 40 layouts can’t be filled. New grid only deals layouts a solver has filled first.",
+      "w": 320,
+      "x": 1880,
+      "y": 0
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Home.dc.html",
+    "Complete.dc.html",
+    "Race.dc.html"
+  ],
+  "pages": [],
+  "title": "Tessel"
+}
