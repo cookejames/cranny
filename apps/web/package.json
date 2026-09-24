@@ -1,0 +1,17 @@
+{
+  "name": "@tessel/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@tessel/engine": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.1"
+  }
+}
