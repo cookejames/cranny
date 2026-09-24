@@ -2,6 +2,8 @@ import { generateGrid, PIECE_IDS, solve, type PieceId } from '@tessel/engine';
 import { useReducer } from 'react';
 import { useNavigate } from 'react-router';
 import { Board } from '../board/Board.tsx';
+import { FloatingPiece } from '../drag/FloatingPiece.tsx';
+import { useDrag } from '../drag/useDrag.ts';
 import { isPlaced, newRound, placedCount, roundReducer } from '../game/round.ts';
 import { Controls } from './Controls.tsx';
 import { PlayHeader } from './PlayHeader.tsx';
@@ -40,18 +42,35 @@ function initialRound({
 
 /**
  * The play screen for one grid (SPEC.md §5): header, progress, board, controls and tray. Pieces
- * can be selected, rotated and flipped; dragging them onto the board arrives in Phase 4, and the
- * Start button, running clock and completion in Phase 5.
+ * are selected, rotated and flipped in the tray and dragged on and off the board (`useDrag`). The
+ * Start button, running clock and completion arrive in Phase 5.
  */
 export function PlayScreen({ version, seed, code, shared, startSolved = false }: PlayScreenProps) {
   const [round, dispatch] = useReducer(roundReducer, { version, seed, startSolved }, initialRound);
   const navigate = useNavigate();
   const placed = (piece: PieceId) => isPlaced(round, piece);
+  const select = (piece: PieceId) => dispatch({ type: 'select', piece });
+  const {
+    boardRef,
+    trayRef,
+    floatingRef,
+    lifted,
+    floating,
+    preview,
+    onBoardPointerDown,
+    onTrayPointerDown,
+  } = useDrag({ round, dispatch, onTrayTap: select });
 
   return (
     <main className={styles.play}>
       <PlayHeader code={code} shared={shared} elapsedMs={0} isPlaced={placed} />
-      <Board board={round.board} />
+      <Board
+        board={round.board}
+        ref={boardRef}
+        lifted={lifted}
+        preview={preview}
+        onPointerDown={onBoardPointerDown}
+      />
       <Controls
         hasSelection={round.selected !== null}
         placedCount={placedCount(round)}
@@ -64,8 +83,12 @@ export function PlayScreen({ version, seed, code, shared, startSolved = false }:
         orientations={round.orientations}
         isPlaced={placed}
         selected={round.selected}
-        onSelect={(piece) => dispatch({ type: 'select', piece })}
+        onSelect={select}
+        onPiecePointerDown={onTrayPointerDown}
+        lifted={lifted}
+        ref={trayRef}
       />
+      <FloatingPiece floating={floating} ref={floatingRef} />
     </main>
   );
 }

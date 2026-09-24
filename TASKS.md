@@ -38,11 +38,11 @@
 
 ## Phase 4 — Drag and drop (§6)
 
-- [ ] **T4.1 Snap maths (pure).** Turns the pointer position, the grabbed cell and the lift into a target origin cell and validity. Lives in `apps/web/src/drag/`, with unit tests including the edge where the lift is reduced near the top of the board.
-- [ ] **T4.2 Pointer handling.** Primary pointer only, with a 6 px tap-versus-drag threshold, `touch-action: none` and `overscroll-behavior: none`. The floating piece moves with a CSS transform on a ref (no React re-render per frame). The piece is lifted about 1.5 cells on touch and not lifted for mouse or pen.
-- [ ] **T4.3 Snap preview.** A tinted ghost for a valid target and a red outline on the cells over the board for an invalid one. It only re-renders when the target cell changes.
-- [ ] **T4.4 Drop rules.** Valid drop: place the piece with a 120 ms settle. Invalid drop over the board: return the piece to where it came from. Drop outside the board: return it to the tray. `pointercancel`: return it to where it came from.
-- [ ] **T4.5 Moving placed pieces.** Dragging a placed piece picks it up (using `ignore` from T1.3) and applies the same drop rules.
+- [x] **T4.1 Snap maths (pure).** Turns the pointer position, the grabbed cell and the lift into a target origin cell and validity. Lives in `apps/web/src/drag/`, with unit tests including the edge where the lift is reduced near the top of the board.
+- [x] **T4.2 Pointer handling.** Primary pointer only, with a 6 px tap-versus-drag threshold, `touch-action: none` and `overscroll-behavior: none`. The floating piece moves with a CSS transform on a ref (no React re-render per frame). The piece is lifted about 1.5 cells on touch and not lifted for mouse or pen.
+- [x] **T4.3 Snap preview.** A tinted ghost for a valid target and a red outline on the cells over the board for an invalid one. It only re-renders when the target cell changes.
+- [x] **T4.4 Drop rules.** Valid drop: place the piece with a 120 ms settle. Invalid drop over the board: return the piece to where it came from. Drop outside the board: return it to the tray. `pointercancel`: return it to where it came from.
+- [x] **T4.5 Moving placed pieces.** Dragging a placed piece picks it up (using `ignore` from T1.3) and applies the same drop rules.
 - [ ] **T4.6 Real-device check.** Test on an iPhone (Safari), an Android phone (Chrome) and a desktop browser. Watch for scroll or bounce, pull-to-refresh and pointer cancellation.
 
 ## Phase 5 — Game flow and timer (§5, §7)

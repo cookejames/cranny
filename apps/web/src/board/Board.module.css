@@ -12,6 +12,11 @@
   padding: var(--board-padding);
   border-radius: var(--radius-board);
   background: var(--color-board-frame);
+  /* Pieces are dragged on and off the board: no scrolling, zooming or text selection. */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .cells {
@@ -34,6 +39,10 @@
 
 .cell {
   background: var(--color-cell-empty);
+}
+
+.cell[data-occupied] {
+  cursor: grab;
 }
 
 .blocked {
@@ -66,5 +75,21 @@
   /* Half of this is clipped away (see Board.tsx), leaving a 2 px outline inside the shape. */
   stroke-width: 4;
   stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Snap preview: where the dragged piece would land (SPEC.md §6). */
+.ghost {
+  fill: color-mix(in oklab, var(--piece), transparent 55%);
+  stroke: var(--piece);
+  stroke-width: 2;
+  stroke-dasharray: 4 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.invalid {
+  fill: color-mix(in oklab, var(--color-invalid), transparent 88%);
+  stroke: var(--color-invalid);
+  stroke-width: 2;
   vector-effect: non-scaling-stroke;
 }

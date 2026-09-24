@@ -4,6 +4,6 @@ export const TAP_SLOP_PX = 6;
 /** A point in client (viewport) coordinates. */
 export type ClientPoint = { x: number; y: number };
 
-/** Whether a pointer that went down at `from` and up at `to` counts as a tap. */
+/** Whether a pointer that went down at `from` and is now at `to` is still within tap range. */
 export const isTap = (from: ClientPoint, to: ClientPoint) =>
   Math.hypot(to.x - from.x, to.y - from.y) < TAP_SLOP_PX;

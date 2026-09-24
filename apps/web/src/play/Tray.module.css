@@ -22,9 +22,12 @@
   justify-items: center;
   align-items: center;
   gap: 2px;
-  cursor: pointer;
-  /* Drag-only placement (Phase 4) must not scroll or zoom the page. */
+  cursor: grab;
+  /* Pieces are dragged out of the tray: no scrolling, zooming, text selection or callout. */
   touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .tile[aria-pressed='true'] {
@@ -52,6 +55,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* The piece is out of its slot while dragged; the slot keeps its size for the flight back. */
+.shape[data-lifted] {
+  visibility: hidden;
 }
 
 .label {

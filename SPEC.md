@@ -186,7 +186,7 @@ Pointer Events are used throughout, handling only the primary pointer. The board
 - **Drop:**
   - Valid target: the piece is placed and settles with a short 120 ms animation.
   - Invalid target over the board: the piece animates back to where it came from (its tray slot, or its previous grid position if it was being moved).
-  - Released outside the board: the piece returns to the **tray**.
+  - Released outside the board: the piece returns to the **tray**. A piece counts as outside once the cell being held would land off the board, even if other cells still overlap it, so a placed piece comes off by dragging it past any edge. No preview is shown then.
   - `pointercancel` (for example an incoming call or the system taking over a gesture): the piece returns to where it came from.
 - **Moving placed pieces:** dragging a placed piece picks it up (its cells count as free during the move). The drop rules above apply. Rotating a piece while it is on the board is not supported in v1.
 - There is no undo stack; picking pieces up is the undo.

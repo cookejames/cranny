@@ -1,0 +1,15 @@
+.floating {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  pointer-events: none;
+  transform-origin: 0 0;
+  will-change: transform;
+  filter: drop-shadow(0 6px 10px rgb(0 0 0 / 0.22));
+}
+
+/* Match the board's 2 px piece outline rather than the tray preview's thinner one. */
+.floating svg path {
+  stroke-width: 2;
+}
