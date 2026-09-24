@@ -73,7 +73,7 @@
 - [x] **T8.2 Site bucket.** Private, with public access blocked, versioning and SSE-S3 encryption.
 - [x] **T8.3 CloudFront distribution.** Origin Access Control, a bucket policy that only allows the distribution, `index.html` as the default root, HTTP→HTTPS redirect, 403/404 → `/index.html` with status 200, and a response headers policy (HSTS, nosniff, Referrer-Policy, CSP).
 - [x] **T8.4 Certificate and DNS.** An ACM certificate for `cranny.cooke.ing` in us-east-1, validated through the existing `cooke.ing` Route 53 zone, plus A and AAAA alias records. Outputs: the bucket name and distribution ID.
-- [ ] **T8.5 `scripts/deploy.sh`.** Build, then sync to S3 with long-lived immutable caching for `assets/*` and `no-cache` for `index.html`, then invalidate `/*`. It reads the bucket and distribution IDs from `terraform output`.
+- [x] **T8.5 `scripts/deploy.sh`.** Build, then sync to S3 with long-lived immutable caching for `assets/*` and `no-cache` for `index.html`, then invalidate `/*`. It reads the bucket and distribution IDs from `terraform output`.
 - [ ] **T8.6 First deploy and smoke test.** Check that https://cranny.cooke.ing loads, that a deep link to `/g/<code>` opens that grid after a refresh, that caching headers are correct, and play a full round on a phone.
 
 ## Later (out of v1 scope, §1, §13)
