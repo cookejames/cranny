@@ -89,13 +89,15 @@ type BoardState = { grid: Grid; placements: Partial<Record<PieceId, Placement>> 
 - `PIECES`: the definitions (id, name, base cells, colour token).
 - `shapeOf(piece, orientation): Shape` and `orientationsOf(piece): Shape[]` (unique, precomputed).
 - `cellsOf(piece, placement): Cell[] | null`. Returns null if any cell is off the board.
-- `canPlace(state, piece, placement, { ignore?: PieceId }): boolean`. `ignore` treats a piece that is being moved as absent.
+- `canPlace(state, piece, placement, { ignore?: PieceId }): boolean`. A piece's own current placement never blocks it (placing a placed piece moves it); `ignore` also treats another piece as absent.
 - `place(state, piece, placement): BoardState`, `remove(state, piece): BoardState`, `clear(state): BoardState`.
 - `occupancy(state): (PieceId | 'X' | null)[]`, where `'X'` means blocked.
 - `isSolved(state): boolean`
-- `solve(blocked: Cell[]): Record<PieceId, Placement> | null`. A deterministic backtracking search: take the first empty cell in row-major order and try each unused piece and orientation with that shape's first cell anchored there. It has **no node cap**, because solvability must be exact so generation stays reproducible. Budget: worst case under 50 ms on a mid-range phone; this is covered by a test.
+- `solve(blocked: Cell[]): Record<PieceId, Placement> | null`. A deterministic backtracking search: take the first empty cell in row-major order and try each unused piece and orientation with that shape's first cell anchored there. It has **no node cap**, because solvability must be exact so generation stays reproducible. Budget: worst case under 50 ms on a mid-range phone; this is covered by a test. To stay within it, the search skips positions it has already shown to be dead ends and checks that the empty regions can be covered by the unused pieces' square counts. Neither check changes which solution is found.
 - `generateGrid(seed: number, version = CURRENT_VERSION): Grid`
-- `encodeGridCode(grid) / decodeGridCode(code): { version, seed } | Error`
+- `encodeGridCode(grid) / decodeGridCode(code): { version, seed } | GridCodeError` (`kind`: `'malformed'` or `'unsupported-version'`).
+- Also exported (see `packages/engine/src/index.ts` for the full list): `newBoard(grid)`, `uniqueOrientations(piece)` (each unique shape with an `Orientation` that produces it), `randomSeed()`, cell helpers (`rowOf`, `colOf`, `cellAt`), the board constants, and validators for untrusted data (`isPieceId`, `isValidOrientation`, `isValidCell`, `isValidBlocked`).
+- Robustness: state restored from storage can't be trusted. `cellsOf`, `occupancy`, `canPlace` and `isSolved` treat malformed pieces, orientations, origins or blocked lists as invalid rather than throwing, and `solve` returns null unless given 7 distinct cells in `0..35`.
 
 ### Seeded generation (version 1, frozen once shipped)
 
@@ -106,7 +108,7 @@ type BoardState = { grid: Grid; placements: Partial<Record<PieceId, Placement>> 
 
 ### Grid codes
 
-- Format: 1 version character followed by 6 Crockford base32 characters (30-bit seed), e.g. `1K7QX2M`. Case-insensitive; `I/L` read as `1` and `O` as `0`.
+- Format: 1 version character followed by 6 Crockford base32 characters (30-bit seed), e.g. `1K7QX2M`. Case-insensitive; `I/L` read as `1` and `O` as `0`. The single version character caps the scheme at version 31.
 - URL: `https://tessel.cooke.ing/g/1K7QX2M`
 - Decode errors: malformed code → "That grid link isn't valid". Unknown version → "This grid needs a newer version of Tessel. Refresh to update." Both offer "Play a new grid".
 

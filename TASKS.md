@@ -8,17 +8,17 @@
 
 ## Phase 1 — Engine (`packages/engine`, §4)
 
-- [ ] **T1.1 Types and piece definitions.** `Cell`, `PieceId`, `Orientation`, `Shape`, `Placement`, `Grid` and `BoardState`, plus `PIECES` with names, base cells and colour tokens.
-- [ ] **T1.2 Geometry.** `shapeOf`, `orientationsOf` (unique, precomputed) and `cellsOf`.
+- [x] **T1.1 Types and piece definitions.** `Cell`, `PieceId`, `Orientation`, `Shape`, `Placement`, `Grid` and `BoardState`, plus `PIECES` with names, base cells and colour tokens.
+- [x] **T1.2 Geometry.** `shapeOf`, `orientationsOf` (unique, precomputed) and `cellsOf`.
       _Done when:_ the orientation counts match §2 (I4 2, O4 1, T4 4, S4 4, L4 8, I3 2, V3 4, D2 2, M1 1).
-- [ ] **T1.3 Board operations.** `canPlace` (with `ignore`), `place`, `remove`, `clear`, `occupancy` and `isSolved`. All pure, with JSON-serialisable state.
-- [ ] **T1.4 Solver.** A deterministic `solve(blocked)` that fills the first empty cell in row-major order, with no node cap.
+- [x] **T1.3 Board operations.** `canPlace` (with `ignore`), `place`, `remove`, `clear`, `occupancy` and `isSolved`. All pure, with JSON-serialisable state.
+- [x] **T1.4 Solver.** A deterministic `solve(blocked)` that fills the first empty cell in row-major order, with no node cap.
       _Done when:_ it solves known grids, returns null on a known unsolvable grid, and 1,000 generated grids run within the budget (§4, §12).
-- [ ] **T1.5 Seeded generator v1.** mulberry32 with a 30-bit seed, a partial Fisher–Yates draw of 7 cells, retrying from the same PRNG stream until a layout is solvable, returning the cells sorted, plus `CURRENT_VERSION = 1`. A helper creates random seeds with `crypto.getRandomValues`.
+- [x] **T1.5 Seeded generator v1.** mulberry32 with a 30-bit seed, a partial Fisher–Yates draw of 7 cells, retrying from the same PRNG stream until a layout is solvable, returning the cells sorted, plus `CURRENT_VERSION = 1`. A helper creates random seeds with `crypto.getRandomValues`.
       _Done when:_ the golden-seed tests are recorded and passing. From this point, generator v1 is frozen.
-- [ ] **T1.6 Grid codes.** `encodeGridCode` / `decodeGridCode`: a version character plus 6 Crockford base32 characters, case-insensitive, with the I/L→1 and O→0 aliases, and distinct errors for a malformed code and an unknown version.
+- [x] **T1.6 Grid codes.** `encodeGridCode` / `decodeGridCode`: a version character plus 6 Crockford base32 characters, case-insensitive, with the I/L→1 and O→0 aliases, and distinct errors for a malformed code and an unknown version.
       _Done when:_ round-trip and error tests pass.
-- [ ] **T1.7 Engine test suite complete** (§12). Covers everything in T1.2–T1.6, with the public API exported from `index.ts`.
+- [x] **T1.7 Engine test suite complete** (§12). Covers everything in T1.2–T1.6, with the public API exported from `index.ts`.
 
 ## Phase 2 — Web app shell (`apps/web`, §5, §9)
 

@@ -7,8 +7,9 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "test": "vitest run --passWithNoTests",
-    "typecheck": "tsc -p tsconfig.json"
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json",
+    "bench": "node bench/solver.ts"
   },
   "devDependencies": {
     "typescript": "^6.0.3",
