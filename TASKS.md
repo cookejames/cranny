@@ -63,9 +63,9 @@
 
 ## Phase 7 — Tests and polish (§10, §12)
 
-- [ ] **T7.1 Component tests.** Tray selection with Rotate/Flip, blockers hidden before Start and the clock starting, the skip confirmation, the results personal best and stats, the invalid-code screens, and round restore.
-- [ ] **T7.2 Accessibility pass** (§10). Contrast of at least 4.5:1, touch targets of at least 44 px, real buttons, and labels on the tray tiles and cells.
-- [ ] **T7.3 Security headers compatibility.** Check that the built app works under the planned CSP: fonts, assets and inline styles are all self-hosted.
+- [x] **T7.1 Component tests.** Tray selection with Rotate/Flip, blockers hidden before Start and the clock starting, the skip confirmation, the results personal best and stats, the invalid-code screens, and round restore.
+- [x] **T7.2 Accessibility pass** (§10). Contrast of at least 4.5:1, touch targets of at least 44 px, real buttons, and labels on the tray tiles and cells.
+- [x] **T7.3 Security headers compatibility.** Check that the built app works under the planned CSP: fonts, assets and inline styles are all self-hosted.
 
 ## Phase 8 — Infrastructure and deploy (§11)
 

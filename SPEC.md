@@ -220,7 +220,7 @@ Pointer Events are used throughout, handling only the primary pointer. The board
 ## 10. Accessibility (v1)
 
 - Pieces are distinguished by merged outlines and shapes, not only colour (§9).
-- Real `<button>` elements for all controls, and `aria-label`s on the board cells and tray tiles ("Tee, 4 squares, selected").
+- Real `<button>` elements for all controls, and `aria-label`s on the board cells ("Row 2, column 5: Tee") and tray tiles ("Tee, 4 squares", plus ", placed"). The selected tile is marked with `aria-pressed`, which screen readers announce as pressed.
 - Text contrast of at least 4.5:1 and touch targets of at least 44 px.
 - Keyboard and screen-reader play is **deferred**, because drag-only input isn't operable without a pointer. This is a known v1 gap.
 
@@ -234,7 +234,7 @@ Pointer Events are used throughout, handling only the primary pointer. The board
   - **SPA deep links:** custom error responses map 403 and 404 to `/index.html` with status **200**, so `/g/<code>` works.
   - An ACM certificate for `cranny.cooke.ing` in **us-east-1** (aliased provider), validated through Route 53 DNS.
   - Route 53 A and AAAA alias records pointing to the distribution.
-  - A response headers policy with HSTS, `X-Content-Type-Options`, `Referrer-Policy` and a CSP allowing only self-hosted assets.
+  - A response headers policy with HSTS, `X-Content-Type-Options`, `Referrer-Policy` and a CSP allowing only self-hosted assets. The exact headers live in `apps/web/security-headers.json`, which `pnpm preview` also sends, so the policy is tested against the production build before deploying.
 - **Outputs:** bucket name and distribution ID (used by the deploy script).
 - **`scripts/deploy.sh` (manual):**
   1. `pnpm build`

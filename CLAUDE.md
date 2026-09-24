@@ -45,6 +45,8 @@ TypeScript is pinned to 6.0.x: typescript-eslint doesn't support TypeScript 7 ye
 - Drag and drop lives in `src/drag/`: the maths (grab point, touch lift, snapping, validity) is pure and tested in `snap.ts`; `useDrag.ts` owns the gesture. It listens on `window`, so a press is a tap or a drag no matter where the pointer ends up (6 px slop, `tap.ts`), and tray taps come from it too: the tray's `click` handles keyboard activation only (`event.detail === 0`). The floating piece moves by setting a transform on a ref, never through React state; only snap-target changes re-render. Placements are dispatched at drop time, before the settle animation, so round state is never behind the screen.
 - Development only: add `?solve` to a `/g/<code>` URL to skip Start with every piece but the Single placed, so one drop completes the grid.
 - All `localStorage` access goes through `src/storage/storage.ts`, which never throws and validates everything it reads back. Don't call `localStorage` directly.
+- The production CSP (`apps/web/security-headers.json`) allows only same-origin scripts, styles, fonts and images. Set styles through React's `style` prop or CSS modules, never `style="…"` in HTML strings (`innerHTML`), which the CSP blocks; don't add inline scripts, external assets or `data:` URIs. Check with `pnpm build && pnpm --filter @cranny/web preview`, which serves the build with those headers.
+- Accessibility: `src/a11y.test.tsx` runs axe on every screen, and `src/styles/contrast.test.ts` checks every text/background token pair reaches 4.5:1. A new text colour or background pair needs adding to its list.
 
 ## Engine rules that are easy to break
 

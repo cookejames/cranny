@@ -22,7 +22,7 @@ export function GridPage() {
   if (decoded instanceof GridCodeError) {
     return (
       <main className={styles.error}>
-        <p>{decoded.message}</p>
+        <h1 className={styles.message}>{decoded.message}</h1>
         <Link to="/play" className={styles.newGrid}>
           Play a new grid
         </Link>
