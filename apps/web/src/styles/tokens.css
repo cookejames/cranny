@@ -1,0 +1,36 @@
+/* Design tokens from design/ and SPEC.md §9. */
+:root {
+  /* Surfaces and text */
+  --color-ground: #f3efe6;
+  --color-ink: #1d1b18;
+  --color-muted: #5e574c;
+  --color-board-frame: #d6ccb9;
+  --color-cell-empty: #eae3d5;
+  --color-cell-blocked: #26231f;
+  --color-peg: #4a453d;
+  --color-tile: #eae3d5;
+  --color-tile-selected: #fffdf8;
+  --color-line: #cfc5b2;
+  --color-invalid: #b42318;
+
+  /* Pieces, keyed by the engine's `colorToken` (e.g. `piece-t4`) */
+  --piece-i4: #3f6fa8;
+  --piece-o4: #e3a87c;
+  --piece-t4: #8c5ba6;
+  --piece-s4: #2f8f85;
+  --piece-l4: #c4557a;
+  --piece-i3: #d1604b;
+  --piece-v3: #6e9e6a;
+  --piece-d2: #e0a43a;
+  --piece-m1: #7fa7c9;
+
+  /* Type */
+  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-body: 'Instrument Sans', system-ui, sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, monospace;
+
+  /* Shape */
+  --radius-board: 16px;
+  --radius-cell: 7px;
+  --radius-control: 12px;
+}

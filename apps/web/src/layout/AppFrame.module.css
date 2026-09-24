@@ -1,0 +1,10 @@
+.frame {
+  width: 100%;
+  max-width: var(--column-width);
+  min-height: 100dvh;
+  margin: 0 auto;
+  /* Must match LAYOUT in layout.ts (paddingTop/paddingBottom, gutter). */
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+}

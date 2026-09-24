@@ -15,6 +15,7 @@ Build spec: see SPEC.md. Task list and progress: TASKS.md.
 Node 24 (`.nvmrc`), pnpm 12 (installed globally; version recorded in `packageManager`).
 
 - `pnpm install`
+- `pnpm dev`: Vite dev server for the web app; `pnpm build`: production build to `apps/web/dist`
 - `pnpm lint` / `pnpm typecheck` / `pnpm test` (all workspace packages)
 - `pnpm format` / `pnpm format:check` (Prettier)
 - Single package: `pnpm --filter @tessel/engine test`
@@ -23,7 +24,7 @@ Node 24 (`.nvmrc`), pnpm 12 (installed globally; version recorded in `packageMan
 
 ## Layout
 
-pnpm workspaces: `packages/engine` (`@tessel/engine`, pure TS rules engine, no DOM or React) and `apps/web` (`@tessel/web`, consumes the engine via `workspace:*`; Vite + React not set up yet). The engine is consumed as TypeScript source (`exports` points at `src/index.ts`), so it has no build step.
+pnpm workspaces: `packages/engine` (`@tessel/engine`, pure TS rules engine, no DOM or React) and `apps/web` (`@tessel/web`: Vite + React 19 + React Router 8, consumes the engine via `workspace:*`). The engine is consumed as TypeScript source (`exports` points at `src/index.ts`), so it has no build step.
 
 TypeScript is pinned to 6.0.x: typescript-eslint doesn't support TypeScript 7 yet. Don't upgrade it until typescript-eslint does. Imports use explicit `.ts` extensions (`allowImportingTsExtensions`), and the engine has no DOM or Node types, so it can't use `performance`, `process` and similar globals.
 
@@ -33,6 +34,13 @@ TypeScript is pinned to 6.0.x: typescript-eslint doesn't support TypeScript 7 ye
   - Start with a one-line summary of what it does. Add more only for what the signature doesn't say: side effects, invariants, units, when it throws or returns null.
   - Use TSDoc syntax: `@param name - description` (with the hyphen), `@returns`, `@throws`. Add `@param`/`@returns` only when they say more than the types do.
   - When you edit an existing function that lacks one, add it.
+
+## Web app
+
+- Routes live in `apps/web/src/App.tsx` (`AppRoutes`), rendered inside `BrowserRouter` in `main.tsx` and inside `MemoryRouter` in tests. `/play` redirects to `/g/<code>` with a fresh seed; `/g/:code` redirects non-canonical codes to the canonical form.
+- Play-screen sizing is computed in `src/layout/layout.ts` (`computeLayout`) and exposed to CSS as `--board-size` / `--tile-size` by `AppFrame`. Code that needs the board's pixel position or size (e.g. drag maths) should measure the rendered board with `getBoundingClientRect()` rather than recompute it. If you change vertical spacing in the play screen's CSS, update `LAYOUT` to match, or the screen won't fit an iPhone SE.
+- Colours and fonts are CSS variables in `src/styles/tokens.css`. Piece colours are `--piece-<id>`, matching the engine's `colorToken`.
+- All `localStorage` access goes through `src/storage/storage.ts`, which never throws and validates everything it reads back. Don't call `localStorage` directly.
 
 ## Engine rules that are easy to break
 

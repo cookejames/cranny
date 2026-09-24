@@ -22,11 +22,11 @@
 
 ## Phase 2 — Web app shell (`apps/web`, §5, §9)
 
-- [ ] **T2.1 Vite + React + TS app.** React Router routes `/`, `/play` (generates a seed and replaces the URL with `/g/<code>`), `/g/:code`, and a catch-all redirect to `/`. Includes a Vitest + React Testing Library + jsdom setup.
-- [ ] **T2.2 Design tokens and fonts** (§9). The palette as CSS variables and self-hosted `@fontsource` fonts (Bricolage Grotesque, Instrument Sans, DM Mono).
-- [ ] **T2.3 Responsive layout frame** (§9). A `100dvh` column, a maximum width of 480 px on desktop, and board size computed from the viewport.
+- [x] **T2.1 Vite + React + TS app.** React Router routes `/`, `/play` (generates a seed and replaces the URL with `/g/<code>`), `/g/:code`, and a catch-all redirect to `/`. Includes a Vitest + React Testing Library + jsdom setup.
+- [x] **T2.2 Design tokens and fonts** (§9). The palette as CSS variables and self-hosted `@fontsource` fonts (Bricolage Grotesque, Instrument Sans, DM Mono).
+- [x] **T2.3 Responsive layout frame** (§9). A `100dvh` column, a maximum width of 480 px on desktop, and board size computed from the viewport.
       _Done when:_ the layout fits 375×667 and 390×844 without scrolling.
-- [ ] **T2.4 Storage utilities** (§5, §8). Try/catch-wrapped `localStorage` access for the stats (`tessel.stats.v1`) and the in-progress round. The game must work when storage is unavailable.
+- [x] **T2.4 Storage utilities** (§5, §8). Try/catch-wrapped `localStorage` access for the stats (`tessel.stats.v1`) and the in-progress round. The game must work when storage is unavailable.
 
 ## Phase 3 — Board rendering
 
