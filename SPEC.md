@@ -212,7 +212,7 @@ Pointer Events are used throughout, handling only the primary pointer. The board
 
 - Follow `design/` for layout, spacing and palette:
   - Ground `#F3EFE6`, ink `#1D1B18`, muted text `#5E574C`, board frame `#D6CCB9`, empty cell `#EAE3D5`, blocked cell `#26231F` with a peg dot.
-  - Piece colours: I4 `#3F6FA8`, O4 `#E3A87C`, T4 `#8C5BA6`, S4 `#2F8F85`, L4 `#C4557A`, I3 `#D1604B`, V3 `#6E9E6A`, D2 `#E0A43A`, M1 `#7FA7C9`.
+  - Piece colours: I4 `#3F6FA8`, O4 `#EE7E2F`, T4 `#8C5BA6`, S4 `#2F8F85`, L4 `#C4557A`, I3 `#D1604B`, V3 `#6E9E6A`, D2 `#E0A43A`, M1 `#7FA7C9`.
 - Fonts: Bricolage Grotesque (display), Instrument Sans (UI) and DM Mono (timer), self-hosted with `@fontsource` packages rather than loaded from Google Fonts.
 - **Placed pieces are drawn as one merged shape** with a 2 px darker outline (the piece colour darkened about 25%), not as separate squares. This makes pieces readable without relying on colour. It is implemented as an SVG overlay above the board's CSS grid, with the path computed from the piece's cells.
 - **Responsive:** the layout was designed at 390×844. Board size = `min(viewport width − 40px, available height after the header, controls and tray)`. Tray tiles scale with it. It must fit an iPhone SE (375×667) without scrolling, and use `100dvh`. On desktop, the column is centred with a maximum width of 480 px.
