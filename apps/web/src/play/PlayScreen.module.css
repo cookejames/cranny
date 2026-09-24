@@ -1,0 +1,7 @@
+/* Section heights and gaps must match LAYOUT in layout/layout.ts. */
+.play {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}

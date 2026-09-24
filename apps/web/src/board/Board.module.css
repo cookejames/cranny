@@ -1,0 +1,70 @@
+/* --cell-gap-ratio, --board-span and --piece-radius come from metrics.ts via an inline style. */
+.board {
+  --board-padding: 8px;
+  --inner: calc(var(--board-size) - 2 * var(--board-padding));
+  --cell: calc(var(--inner) / var(--board-span));
+  --cell-gap: calc(var(--cell) * var(--cell-gap-ratio));
+
+  position: relative;
+  align-self: center;
+  width: var(--board-size);
+  height: var(--board-size);
+  padding: var(--board-padding);
+  border-radius: var(--radius-board);
+  background: var(--color-board-frame);
+}
+
+.cells {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-rows: repeat(6, minmax(0, 1fr));
+  gap: var(--cell-gap);
+}
+
+.row {
+  display: contents;
+}
+
+.cell,
+.blocked {
+  border-radius: calc(var(--cell) * var(--piece-radius));
+}
+
+.cell {
+  background: var(--color-cell-empty);
+}
+
+.blocked {
+  background: var(--color-cell-blocked);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.peg {
+  width: 27%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--color-peg);
+  box-shadow: inset 0 1px 0 #6b655a;
+}
+
+.pieces {
+  position: absolute;
+  inset: var(--board-padding);
+  width: var(--inner);
+  height: var(--inner);
+  overflow: visible;
+  pointer-events: none;
+}
+
+.piece {
+  fill: var(--piece);
+  stroke: color-mix(in oklab, var(--piece), black 25%);
+  /* Half of this is clipped away (see Board.tsx), leaving a 2 px outline inside the shape. */
+  stroke-width: 4;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}

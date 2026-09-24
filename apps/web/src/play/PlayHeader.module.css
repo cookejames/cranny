@@ -1,0 +1,89 @@
+.header {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.back {
+  width: 44px;
+  height: 44px;
+  margin-left: -12px;
+  border-radius: var(--radius-control);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.back:focus-visible {
+  outline: 3px solid var(--piece-i4);
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.mode {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.grid {
+  margin: 0;
+  /* Stay on one line in the 44 px header, even when an hour-long time squeezes it. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.timer {
+  font-family: var(--font-mono);
+  font-size: 30px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.progress {
+  height: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.count {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-muted);
+}
+
+.pips {
+  display: flex;
+  gap: 4px;
+}
+
+.pip {
+  width: 14px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-board-frame);
+}

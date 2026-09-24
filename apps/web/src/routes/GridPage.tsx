@@ -1,14 +1,22 @@
 import { decodeGridCode, encodeGridCode, GridCodeError } from '@tessel/engine';
-import { Link, Navigate, useParams } from 'react-router';
+import { Link, Navigate, useLocation, useParams } from 'react-router';
+import { PlayScreen } from '../play/PlayScreen.tsx';
 import styles from './GridPage.module.css';
 
+/** Router state set by `/play`, marking a grid the game dealt rather than one from a link. */
+export type DealtState = { dealt: true };
+
+/** Whether router state marks the grid as dealt by `/play`. */
+const isDealt = (state: unknown): state is DealtState =>
+  typeof state === 'object' && state !== null && (state as DealtState).dealt === true;
+
 /**
- * `/g/:code`: the play screen for one grid. Placeholder shell for Phase 2: it validates the
- * code, normalises the URL, and lays out the sized board area. The board, tray, controls and
- * game flow are built in Phases 3–5.
+ * `/g/:code`: validates the grid code, normalises the URL to the canonical code, and shows the
+ * play screen for that grid. A malformed or too-new code gets an explanation and a way out.
  */
 export function GridPage() {
   const { code = '' } = useParams();
+  const location = useLocation();
   const decoded = decodeGridCode(code);
 
   if (decoded instanceof GridCodeError) {
@@ -22,32 +30,23 @@ export function GridPage() {
     );
   }
 
-  // Show one canonical URL per grid (e.g. `1xdwt5h` or `IXDWT5H` → `1XDWT5H`).
+  // Show one canonical URL per grid (e.g. `1xdwt5h` or `IXDWT5H` → `1XDWT5H`), keeping the
+  // router state so a dealt grid stays marked as dealt.
   const canonical = encodeGridCode(decoded);
-  if (canonical !== code) return <Navigate to={`/g/${canonical}`} replace />;
+  if (canonical !== code) {
+    return <Navigate to={`/g/${canonical}`} replace state={location.state as unknown} />;
+  }
 
+  const startSolved = import.meta.env.DEV && new URLSearchParams(location.search).has('solve');
   return (
-    <main className={styles.play}>
-      <header className={styles.header}>
-        <Link to="/" className={styles.back} aria-label="Home">
-          <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M15 6l-6 6 6 6"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </Link>
-        <div className={styles.title}>
-          <span className={styles.mode}>Beat the clock</span>
-          <span className={styles.grid}>Grid {canonical}</span>
-        </div>
-        <span className={styles.timer}>0:00</span>
-      </header>
-      <div className={styles.board} data-testid="board-area" />
-    </main>
+    <PlayScreen
+      // A new grid gets a fresh screen and round state.
+      key={canonical}
+      version={decoded.version}
+      seed={decoded.seed}
+      code={canonical}
+      shared={!isDealt(location.state)}
+      startSolved={startSolved}
+    />
   );
 }

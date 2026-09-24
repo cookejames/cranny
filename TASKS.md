@@ -30,11 +30,11 @@
 
 ## Phase 3 — Board rendering
 
-- [ ] **T3.1 Board component.** A 6×6 CSS grid with empty and blocked cells (peg dot), and `aria-label`s on the cells.
-- [ ] **T3.2 Merged piece outlines** (§9, §10). An SVG overlay that draws each placed piece as one path with a darker 2 px outline. The outline path is computed by a pure, unit-tested function.
-- [ ] **T3.3 Tray** (§5). A 3×3 grid of tiles in the spec order, each showing the piece in its current orientation with its name and size, faded and labelled "Placed" when placed. Tapping a tile selects it (with `aria-pressed`).
-- [ ] **T3.4 Controls row.** Rotate and Flip act on the selected tray piece and are disabled when nothing is selected. Clear returns all placed pieces to the tray. New grid asks for a second tap ("Tap again to skip") within 3 seconds once any piece is placed.
-- [ ] **T3.5 Header and progress.** Back link, mode/grid label ("Shared grid" when opened from a link), stopwatch display, "N of 9 placed" and the pips.
+- [x] **T3.1 Board component.** A 6×6 CSS grid with empty and blocked cells (peg dot), and `aria-label`s on the cells.
+- [x] **T3.2 Merged piece outlines** (§9, §10). An SVG overlay that draws each placed piece as one path with a darker 2 px outline. The outline path is computed by a pure, unit-tested function.
+- [x] **T3.3 Tray** (§5). A 3×3 grid of tiles in the spec order, each showing the piece in its current orientation with its name and size, faded and labelled "Placed" when placed. Tapping a tile selects it (with `aria-pressed`).
+- [x] **T3.4 Controls row.** Rotate and Flip act on the selected tray piece and are disabled when nothing is selected. Clear returns all placed pieces to the tray. New grid asks for a second tap ("Tap again to skip") within 3 seconds once any piece is placed.
+- [x] **T3.5 Header and progress.** Back link, mode/grid label ("Shared grid" when opened from a link), stopwatch display, "N of 9 placed" and the pips.
 
 ## Phase 4 — Drag and drop (§6)
 

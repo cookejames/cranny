@@ -40,6 +40,10 @@ TypeScript is pinned to 6.0.x: typescript-eslint doesn't support TypeScript 7 ye
 - Routes live in `apps/web/src/App.tsx` (`AppRoutes`), rendered inside `BrowserRouter` in `main.tsx` and inside `MemoryRouter` in tests. `/play` redirects to `/g/<code>` with a fresh seed; `/g/:code` redirects non-canonical codes to the canonical form.
 - Play-screen sizing is computed in `src/layout/layout.ts` (`computeLayout`) and exposed to CSS as `--board-size` / `--tile-size` by `AppFrame`. Code that needs the board's pixel position or size (e.g. drag maths) should measure the rendered board with `getBoundingClientRect()` rather than recompute it. If you change vertical spacing in the play screen's CSS, update `LAYOUT` to match, or the screen won't fit an iPhone SE.
 - Colours and fonts are CSS variables in `src/styles/tokens.css`. Piece colours are `--piece-<id>`, matching the engine's `colorToken`.
+- Play-screen state lives in `src/game/round.ts` (`roundReducer`); components under `src/play/` and `src/board/` are presentational and take state and callbacks as props. Rotate/Flip use `rotateClockwise`/`mirror`, which turn the piece as it looks on screen (the engine mirrors before rotating).
+- Placed pieces are drawn as merged SVG outlines (`src/board/outline.ts`). Board proportions (cell gap, corner radius) live only in `src/board/metrics.ts`, which passes them to `Board.module.css` as CSS variables. Change them there, never in the CSS, or pieces won't line up with the cells.
+- Tray taps are detected from pointer events (`src/drag/tap.ts`, 6 px slop), not `click`, so drags can't double as taps. `click` handles keyboard activation only (`event.detail === 0`).
+- Development only: add `?solve` to a `/g/<code>` URL to start with the grid already solved.
 - All `localStorage` access goes through `src/storage/storage.ts`, which never throws and validates everything it reads back. Don't call `localStorage` directly.
 
 ## Engine rules that are easy to break

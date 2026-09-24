@@ -1,0 +1,63 @@
+.tray {
+  /*
+   * One preview cell: 11 px on an 84 px tile, as in the design, but never so large that a
+   * 4-cell-tall piece (4 cells + 3 gaps = 4.55 cells) overflows the space left for it. 32 px is
+   * the tile's vertical padding (12), border (4), label (14) and gap (2).
+   */
+  --shape-cell: min(calc(var(--tile-size) * 0.13), calc((var(--tile-size) - 32px) / 4.55));
+
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.tile {
+  height: var(--tile-size);
+  padding: 6px 4px;
+  border: 2px solid transparent;
+  border-radius: var(--radius-control);
+  background: var(--color-tile);
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  justify-items: center;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  /* Drag-only placement (Phase 4) must not scroll or zoom the page. */
+  touch-action: none;
+}
+
+.tile[aria-pressed='true'] {
+  border-color: var(--color-ink);
+  background: var(--color-tile-selected);
+}
+
+/* Placed: fade the piece and the tile, but keep the "Placed" label readable (SPEC.md §10). */
+.tile:disabled {
+  background: color-mix(in oklab, var(--color-tile), var(--color-ground) 60%);
+  cursor: default;
+}
+
+.tile:disabled .shape {
+  opacity: 0.35;
+}
+
+.tile:focus-visible {
+  outline: 3px solid var(--piece-i4);
+  outline-offset: 2px;
+}
+
+.shape {
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.label {
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 600;
+  color: var(--color-muted);
+  white-space: nowrap;
+}

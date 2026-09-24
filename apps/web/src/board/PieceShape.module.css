@@ -1,0 +1,12 @@
+.shape {
+  display: block;
+  overflow: visible;
+}
+
+.shape path {
+  fill: var(--piece);
+  stroke: color-mix(in oklab, var(--piece), black 25%);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
