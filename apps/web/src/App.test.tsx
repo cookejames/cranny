@@ -56,13 +56,16 @@ describe('routes', () => {
     expect(screen.getByText('Beat the clock')).toBeInTheDocument();
   });
 
-  it('starts solved with ?solve in development only', () => {
+  it('starts one drop from solved with ?solve in development only', () => {
     renderAt('/g/1XDWT5H?solve');
-    expect(screen.getByText('9 of 9 placed')).toBeInTheDocument();
+    expect(screen.getByText('8 of 9 placed')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Start' })).not.toBeInTheDocument();
     cleanup();
+    localStorage.clear(); // Don't resume the round the first render saved.
     vi.stubEnv('DEV', false);
     renderAt('/g/1XDWT5H?solve');
     expect(screen.getByText('0 of 9 placed')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Start' })).toBeInTheDocument();
   });
 
   it('explains a malformed code and offers a new grid', () => {

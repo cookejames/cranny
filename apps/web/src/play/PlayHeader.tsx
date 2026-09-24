@@ -1,15 +1,18 @@
 import { PIECE_IDS, PIECES, type PieceId } from '@tessel/engine';
 import type { CSSProperties } from 'react';
 import { Link } from 'react-router';
-import { formatTime } from '../game/formatTime.ts';
 import styles from './PlayHeader.module.css';
+import { Stopwatch } from './Stopwatch.tsx';
 
 type PlayHeaderProps = {
   /** Canonical grid code, shown as "Grid <code>". */
   code: string;
   /** True when the grid was opened from a link rather than dealt by Play (SPEC.md §5). */
   shared: boolean;
-  elapsedMs: number;
+  /** When Start was pressed; null before. */
+  startedAt: number | null;
+  /** When the grid was completed; the clock stops there. */
+  finishedAt: number | null;
   isPlaced: (piece: PieceId) => boolean;
 };
 
@@ -17,9 +20,8 @@ type PlayHeaderProps = {
  * The play screen's header (back link, mode and grid, stopwatch) and progress row ("N of 9
  * placed" plus a pip per piece in its colour once placed).
  */
-export function PlayHeader({ code, shared, elapsedMs, isPlaced }: PlayHeaderProps) {
+export function PlayHeader({ code, shared, startedAt, finishedAt, isPlaced }: PlayHeaderProps) {
   const placed = PIECE_IDS.filter(isPlaced).length;
-  const time = formatTime(elapsedMs);
   return (
     <>
       <header className={styles.header}>
@@ -32,9 +34,7 @@ export function PlayHeader({ code, shared, elapsedMs, isPlaced }: PlayHeaderProp
           <span className={styles.mode}>{shared ? 'Shared grid' : 'Beat the clock'}</span>
           <h1 className={styles.grid}>Grid {code}</h1>
         </div>
-        <span className={styles.timer} role="timer" aria-label={`Time ${time}`}>
-          {time}
-        </span>
+        <Stopwatch className={styles.timer} startedAt={startedAt} finishedAt={finishedAt} />
       </header>
       <div className={styles.progress}>
         <span className={styles.count}>

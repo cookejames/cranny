@@ -4,7 +4,8 @@ import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BOARD_SPAN, CELL_GAP } from '../board/metrics.ts';
 import { RETURN_MS, SETTLE_MS } from '../drag/useDrag.ts';
-import { PlayScreen } from './PlayScreen.tsx';
+import { loadRound } from '../storage/storage.ts';
+import { CELEBRATION_MS, PlayScreen, REDUCED_CELEBRATION_MS } from './PlayScreen.tsx';
 
 /**
  * Drag and drop through the real play screen. jsdom has no layout, so element boxes are mocked:
@@ -49,13 +50,18 @@ const centre = ([row, col]: readonly [number, number]) => ({
 const cellName = ([row, col]: readonly [number, number], what: string) =>
   `Row ${row + 1}, column ${col + 1}: ${what}`;
 
-/** Renders the play screen for seed 42. */
+/**
+ * Renders the play screen for seed 42 and presses Start, or with `startSolved`, one drop from
+ * solved: every piece placed but the Single.
+ */
 function renderPlay(startSolved = false) {
-  return render(
+  const view = render(
     <MemoryRouter>
       <PlayScreen version={1} seed={42} code="100001A" shared={false} startSolved={startSolved} />
     </MemoryRouter>,
   );
+  if (!startSolved) fireEvent.click(screen.getByRole('button', { name: 'Start' }));
+  return view;
 }
 
 type PointerType = 'mouse' | 'touch';
@@ -77,6 +83,8 @@ const pointer = (
 
 /** The Single's tray tile. */
 const single = () => screen.getByRole('button', { name: /^Single/ });
+/** The Domino's tray tile. */
+const domino = () => screen.getByRole('button', { name: /^Domino/ });
 /** The floating layer, present while a piece is dragged or flying back. */
 const floating = () => document.querySelector('[data-floating]');
 
@@ -84,9 +92,9 @@ const floating = () => document.querySelector('[data-floating]');
 const pressSingle = (pointerType: PointerType = 'mouse') =>
   fireEvent.pointerDown(single(), pointer({ x: 5, y: TRAY_TOP + 5 }, pointerType));
 
-/** Where the Single is on a solved board, as `[row, col]`, and its gridcell. */
-function solvedSingle() {
-  const cell = screen.getByRole('gridcell', { name: /: Single$/ });
+/** Where the Domino's first cell is on a nearly solved board, as `[row, col]`, and its gridcell. */
+function placedDomino() {
+  const cell = screen.getAllByRole('gridcell', { name: /: Domino$/ })[0]!;
   const [, row, col] = /Row (\d), column (\d)/.exec(cell.getAttribute('aria-label')!)!;
   return { cell, at: [Number(row) - 1, Number(col) - 1] as const };
 }
@@ -122,6 +130,7 @@ describe('PlayScreen dragging', () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it('selects a tray piece on a tap', () => {
@@ -216,24 +225,24 @@ describe('PlayScreen dragging', () => {
 
   it('returns a placed piece dragged off the board to the tray', () => {
     renderPlay(true);
-    const { cell, at: from } = solvedSingle();
+    const { cell, at: from } = placedDomino();
     fireEvent.pointerDown(cell, pointer(centre(from)));
     moveTo({ x: 1000, y: 1000 });
     fireEvent.pointerUp(window, pointer({ x: 1000, y: 1000 }));
-    expect(screen.getByText('8 of 9 placed')).toBeInTheDocument();
+    expect(screen.getByText('7 of 9 placed')).toBeInTheDocument();
     act(() => vi.advanceTimersByTime(RETURN_MS));
-    expect(single()).toBeEnabled();
+    expect(domino()).toBeEnabled();
   });
 
   it('puts a placed piece back where it was when the pointer is cancelled', () => {
     renderPlay(true);
-    const { cell, at: from } = solvedSingle();
+    const { cell, at: from } = placedDomino();
     fireEvent.pointerDown(cell, pointer(centre(from)));
     moveTo({ x: 1000, y: 1000 });
     fireEvent.pointerCancel(window, pointer({ x: 1000, y: 1000 }));
     act(() => vi.advanceTimersByTime(RETURN_MS));
-    expect(screen.getByText('9 of 9 placed')).toBeInTheDocument();
-    expect(document.querySelector('g[data-piece="M1"]')).not.toBeNull();
+    expect(screen.getByText('8 of 9 placed')).toBeInTheDocument();
+    expect(document.querySelector('g[data-piece="D2"]')).not.toBeNull();
   });
 
   it('takes a placed piece off once the held cell is dragged past the edge', () => {
@@ -301,12 +310,12 @@ describe('PlayScreen dragging', () => {
 
   it('ignores a press on a placed piece’s tray tile', () => {
     renderPlay(true);
-    pressSingle();
+    fireEvent.pointerDown(domino(), pointer({ x: 5, y: TRAY_TOP + 5 }));
     moveTo({ x: 1000, y: 1000 });
     expect(floating()).toBeNull();
     fireEvent.pointerUp(window, pointer({ x: 1000, y: 1000 }));
-    expect(screen.getByText('9 of 9 placed')).toBeInTheDocument();
-    expect(document.querySelector('g[data-piece="M1"]')).not.toBeNull();
+    expect(screen.getByText('8 of 9 placed')).toBeInTheDocument();
+    expect(document.querySelector('g[data-piece="D2"]')).not.toBeNull();
   });
 
   it('ignores secondary buttons and non-primary pointers', () => {
@@ -381,5 +390,37 @@ describe('PlayScreen dragging', () => {
     expect(floating()).toBeNull();
     expect(single().querySelector('[data-lifted]')).toBeNull();
     expect(screen.getByText('0 of 9 placed')).toBeInTheDocument();
+  });
+
+  /** Drops the Single into the one empty cell of a nearly solved board. */
+  function finish() {
+    const cell = screen.getByRole('gridcell', { name: /: empty$/ });
+    const [, row, col] = /Row (\d), column (\d)/.exec(cell.getAttribute('aria-label')!)!;
+    placeSingle([Number(row) - 1, Number(col) - 1]);
+  }
+
+  it('completes the grid with the last drop, stopping the clock, then shows Results', () => {
+    renderPlay(true);
+    act(() => vi.advanceTimersByTime(3_000));
+    finish();
+    expect(screen.getByText('9 of 9 placed')).toBeInTheDocument();
+    expect(document.querySelector('[data-celebrating]')).not.toBeNull();
+    expect(loadRound()).toBeNull();
+    // The clock stopped at the drop.
+    act(() => vi.advanceTimersByTime(CELEBRATION_MS - SETTLE_MS - 1));
+    expect(screen.getByRole('timer')).toHaveTextContent('0:03');
+    expect(screen.queryByRole('heading', { name: 'Grid complete' })).not.toBeInTheDocument();
+
+    act(() => vi.advanceTimersByTime(1));
+    expect(screen.getByRole('heading', { name: 'Grid complete' })).toBeInTheDocument();
+    expect(screen.getByText('0:03.0')).toBeInTheDocument();
+  });
+
+  it('shortens the celebration to a fade with reduced motion', () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({ matches: query.includes('reduce') }));
+    renderPlay(true);
+    finish();
+    act(() => vi.advanceTimersByTime(REDUCED_CELEBRATION_MS - SETTLE_MS));
+    expect(screen.getByRole('heading', { name: 'Grid complete' })).toBeInTheDocument();
   });
 });

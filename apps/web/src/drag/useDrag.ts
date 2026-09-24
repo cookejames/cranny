@@ -77,6 +77,8 @@ type Animation = { timer: ReturnType<typeof setTimeout>; piece: PieceId; expecte
 
 type DragOptions = {
   round: RoundState;
+  /** Whether pieces can be picked up: only while the round is being played. */
+  active: boolean;
   dispatch: (action: RoundAction) => void;
   /** Called for a tap (no drag) on a tray piece. */
   onTrayTap: (piece: PieceId) => void;
@@ -101,7 +103,7 @@ const snapKey = (s: Snap | null) => (s ? `${s.row},${s.col},${s.origin !== null}
  * Attach `boardRef` to the board's cell area and `trayRef` to the tray (tiles carry
  * `data-piece`), and render the floating piece into `floatingRef`.
  */
-export function useDrag({ round, dispatch, onTrayTap }: DragOptions) {
+export function useDrag({ round, active, dispatch, onTrayTap }: DragOptions) {
   const boardRef = useRef<HTMLDivElement>(null);
   const trayRef = useRef<HTMLDivElement>(null);
   const floatingRef = useRef<HTMLDivElement>(null);
@@ -116,9 +118,9 @@ export function useDrag({ round, dispatch, onTrayTap }: DragOptions) {
   const animation = useRef<Animation | null>(null);
 
   // Handlers read the latest round and callbacks from refs, so the window listeners stay put.
-  const latest = useRef({ round, dispatch, onTrayTap });
+  const latest = useRef({ round, active, dispatch, onTrayTap });
   useLayoutEffect(() => {
-    latest.current = { round, dispatch, onTrayTap };
+    latest.current = { round, active, dispatch, onTrayTap };
   });
 
   /** Moves the floating piece, without a React render. */
@@ -146,7 +148,7 @@ export function useDrag({ round, dispatch, onTrayTap }: DragOptions) {
    */
   const canStart = useCallback(
     (event: ReactPointerEvent) => {
-      if (!isPrimaryPress(event) || animation.current) return false;
+      if (!latest.current.active || !isPrimaryPress(event) || animation.current) return false;
       if (gesture.current) endNow();
       return true;
     },
@@ -356,7 +358,13 @@ export function useDrag({ round, dispatch, onTrayTap }: DragOptions) {
         returnToTray(g.piece);
       } else if (target.origin !== null) {
         // Valid: place now (so the round is up to date), then let the floating piece settle.
-        latest.current.dispatch({ type: 'place', piece: g.piece, origin: target.origin });
+        // Stamped with the drop's time: the drop that fills the grid stops the clock (SPEC.md §7).
+        latest.current.dispatch({
+          type: 'place',
+          piece: g.piece,
+          origin: target.origin,
+          at: Date.now(),
+        });
         const to = cellPosition([target.row, target.col], g.board);
         animateTo(g.piece, target.origin, to, 1, SETTLE_MS);
       } else {

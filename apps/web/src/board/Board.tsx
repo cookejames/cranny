@@ -11,7 +11,13 @@ import {
   type Occupant,
   type PieceId,
 } from '@tessel/engine';
-import { useId, type CSSProperties, type PointerEventHandler, type Ref } from 'react';
+import {
+  useId,
+  type CSSProperties,
+  type PointerEventHandler,
+  type ReactNode,
+  type Ref,
+} from 'react';
 import type { Preview } from '../drag/snap.ts';
 import styles from './Board.module.css';
 import { BOARD_SPAN, boardMetricsStyle, CELL_GAP, PIECE_RADIUS } from './metrics.ts';
@@ -39,6 +45,10 @@ type BoardProps = {
   /** Attached to the cell area, which drag maths measures. */
   ref?: Ref<HTMLDivElement>;
   onPointerDown?: PointerEventHandler<HTMLDivElement>;
+  /** Drawn over the board, e.g. the Start button before the clock starts. */
+  overlay?: ReactNode;
+  /** Play the completion celebration: a sweep of light and a pulse of the pieces. */
+  celebrating?: boolean;
 };
 
 /** CSS variable pointing a shape at its piece colour. */
@@ -59,11 +69,18 @@ export function Board({
   preview = null,
   ref,
   onPointerDown,
+  overlay,
+  celebrating = false,
 }: BoardProps) {
   const clipPrefix = useId();
   const occ = occupancy(board);
   return (
-    <div className={styles.board} style={boardMetricsStyle} onPointerDown={onPointerDown}>
+    <div
+      className={styles.board}
+      style={boardMetricsStyle}
+      onPointerDown={onPointerDown}
+      data-celebrating={celebrating ? '' : undefined}
+    >
       <div className={styles.cells} role="grid" aria-label="Board" ref={ref}>
         {INDICES.map((row) => (
           <div role="row" className={styles.row} key={row}>
@@ -130,6 +147,7 @@ export function Board({
             />
           ))}
       </svg>
+      {overlay}
     </div>
   );
 }

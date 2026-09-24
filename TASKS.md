@@ -47,12 +47,12 @@
 
 ## Phase 5 — Game flow and timer (§5, §7)
 
-- [ ] **T5.1 Round state.** A reducer over `BoardState` plus the selection, orientations, `startedAt` and status (`pre-start` | `playing` | `complete`).
-- [ ] **T5.2 Pre-start screen.** A Start overlay, with the blocked squares **not rendered in the DOM** before Start is pressed.
-- [ ] **T5.3 Wall-clock stopwatch** (§7). `Date.now() - startedAt`, displayed as `m:ss` (and `h:mm:ss` from an hour), with no pause. It stops at the time of the drop that completes the grid.
-- [ ] **T5.4 Save and restore the round** (§5). Save the round to `localStorage` on every change. Reopening `/g/<code>` restores it with the clock still running. Only one round is kept.
-- [ ] **T5.5 Invalid code screens** (§4). "That grid link isn't valid" for a malformed code and the "newer version" message for an unknown version, both with "Play a new grid".
-- [ ] **T5.6 Completion celebration** (§5). A light sweep and a scale-pulse lasting about 700 ms, reduced to a 200 ms fade with `prefers-reduced-motion`, then the Results view.
+- [x] **T5.1 Round state.** A reducer over `BoardState` plus the selection, orientations, `startedAt` and status (`pre-start` | `playing` | `complete`).
+- [x] **T5.2 Pre-start screen.** A Start overlay, with the blocked squares **not rendered in the DOM** before Start is pressed.
+- [x] **T5.3 Wall-clock stopwatch** (§7). `Date.now() - startedAt`, displayed as `m:ss` (and `h:mm:ss` from an hour), with no pause. It stops at the time of the drop that completes the grid.
+- [x] **T5.4 Save and restore the round** (§5). Save the round to `localStorage` on every change. Reopening `/g/<code>` restores it with the clock still running. Only one round is kept.
+- [x] **T5.5 Invalid code screens** (§4). "That grid link isn't valid" for a malformed code and the "newer version" message for an unknown version, both with "Play a new grid".
+- [x] **T5.6 Completion celebration** (§5). A light sweep and a scale-pulse lasting about 700 ms, reduced to a 200 ms fade with `prefers-reduced-motion`, then the Results view.
 
 ## Phase 6 — Results, stats and sharing (§5, §8)
 

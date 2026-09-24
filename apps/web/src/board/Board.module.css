@@ -93,3 +93,64 @@
   stroke-width: 2;
   vector-effect: non-scaling-stroke;
 }
+
+/*
+ * Completion (SPEC.md §5): a sweep of light across the filled board and a brief pulse of the
+ * pieces, about 700 ms (CELEBRATION_MS in PlayScreen.tsx).
+ */
+.board[data-celebrating]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgb(255 255 255 / 0.55) 50%,
+    transparent 65%
+  );
+  background-size: 300% 100%;
+  background-position: 100% 0;
+  opacity: 0;
+  animation: sweep 700ms ease-in-out;
+}
+
+.board[data-celebrating] .pieces {
+  animation: pulse 700ms ease-in-out;
+}
+
+@keyframes sweep {
+  from {
+    background-position: 100% 0;
+    opacity: 1;
+  }
+  to {
+    background-position: 0% 0;
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  40% {
+    transform: scale(1.03);
+  }
+}
+
+/* Reduced motion: just a 200 ms fade (the global rule would otherwise cut it to 1 ms). */
+@media (prefers-reduced-motion: reduce) {
+  .board[data-celebrating]::after,
+  .board[data-celebrating] .pieces {
+    animation: none !important;
+  }
+
+  .board[data-celebrating] {
+    animation: fade-in 200ms ease-out !important;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0.5;
+  }
+}
