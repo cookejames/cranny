@@ -38,7 +38,7 @@ DIST=apps/web/dist
 # Hashed assets never change, so browsers and CloudFront may keep them for a year. Upload them
 # first, so the new index.html never points at files that aren't there yet. Old assets are kept:
 # a browser still showing the previous index.html can go on loading them.
-echo "Uploading assets to s3://$BUCKET…"
+echo "Uploading assets to s3://${BUCKET}…"
 aws s3 sync "$DIST/assets" "s3://$BUCKET/assets" \
   --cache-control "public, max-age=31536000, immutable"
 
