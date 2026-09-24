@@ -21,6 +21,8 @@ Node 24 (`.nvmrc`), pnpm 12 (installed globally; version recorded in `packageMan
 - Single package: `pnpm --filter @cranny/engine test`
 - Single test by name: `pnpm --filter @cranny/engine test -- -t "<name>"`
 - Solver timing: `pnpm --filter @cranny/engine bench` (plain Node; exits non-zero if over the desktop proxy for the phone budget)
+- Infrastructure (`infra/`, Terraform ≥ 1.10, AWS eu-west-2 + us-east-1 for the certificate): `terraform -chdir=infra init -backend-config=backend.hcl`, then `plan`/`apply`. The state bucket comes from `infra/bootstrap/` (one-time, local state); `infra/backend.hcl` is git-ignored because the bucket name includes the account ID, so recreate it from `backend.hcl.example` on a fresh clone. Applying changes real AWS resources: only when asked.
+- Deploy: `scripts/deploy.sh` (lint, typecheck, test, build, upload, invalidate). Needs AWS credentials and an applied `infra/`.
 
 ## Layout
 

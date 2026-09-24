@@ -1,0 +1,5 @@
+# Copy to backend.hcl (git-ignored) and fill in, or generate it after applying infra/bootstrap:
+#   terraform -chdir=infra/bootstrap output -raw backend_config > infra/backend.hcl
+# Then: terraform -chdir=infra init -backend-config=backend.hcl
+bucket = "cranny-terraform-state-<aws account id>"
+region = "eu-west-2"

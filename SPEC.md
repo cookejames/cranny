@@ -226,20 +226,21 @@ Pointer Events are used throughout, handling only the primary pointer. The board
 
 ## 11. Infrastructure (AWS, Terraform in `infra/`)
 
-- **State:** S3 backend in an existing, manually created state bucket, with `use_lockfile = true` (Terraform ≥ 1.10 native S3 locking). Terraform is applied manually.
-- **Variables:** `domain_name = "cranny.cooke.ing"`, `zone_name = "cooke.ing"` (an existing Route 53 hosted zone, looked up with a `data` source), `region`.
+- **State:** S3 backend with `use_lockfile = true` (Terraform ≥ 1.10 native S3 locking). The state bucket (`cranny-terraform-state-<account id>`, eu-west-2: private, versioned, encrypted) is created once by a small separate configuration in `infra/bootstrap/`, whose own state stays local. Its `backend_config` output becomes `infra/backend.hcl` (git-ignored, since the bucket name includes the account ID; `infra/backend.hcl.example` shows the format), used as `terraform init -backend-config=backend.hcl`. Terraform is applied manually.
+- **Variables:** `domain_name = "cranny.cooke.ing"`, `zone_name = "cooke.ing"` (an existing Route 53 hosted zone, looked up with a `data` source), `region = "eu-west-2"`.
 - **Resources:**
-  - A private S3 site bucket: all public access blocked, versioning on, SSE-S3 encryption.
-  - A CloudFront distribution using **Origin Access Control**, a bucket policy that allows only that distribution, `default_root_object = index.html`, and HTTP → HTTPS redirect.
+  - A private S3 site bucket: all public access blocked, versioning on (old versions expire after 30 days), SSE-S3 encryption, and a policy denying non-HTTPS access (the state bucket has the same).
+  - A CloudFront distribution using **Origin Access Control**, a bucket policy that allows only that distribution, `default_root_object = index.html`, HTTP → HTTPS redirect, the managed CachingOptimized cache policy (which honours each file's `Cache-Control`) and `PriceClass_100`.
   - **SPA deep links:** custom error responses map 403 and 404 to `/index.html` with status **200**, so `/g/<code>` works.
   - An ACM certificate for `cranny.cooke.ing` in **us-east-1** (aliased provider), validated through Route 53 DNS.
-  - Route 53 A and AAAA alias records pointing to the distribution.
-  - A response headers policy with HSTS, `X-Content-Type-Options`, `Referrer-Policy` and a CSP allowing only self-hosted assets. The exact headers live in `apps/web/security-headers.json`, which `pnpm preview` also sends, so the policy is tested against the production build before deploying.
+  - Route 53 A and AAAA alias records pointing to the distribution, and a CAA record on the subdomain allowing only Amazon to issue certificates.
+  - A response headers policy with HSTS, `X-Content-Type-Options`, `Referrer-Policy` and a CSP allowing only self-hosted assets. The exact headers live in `apps/web/security-headers.json`, which `pnpm preview` also sends, so the policy is tested against the production build before deploying. The plan fails if that file gains a header the CloudFront policy doesn't map.
 - **Outputs:** bucket name and distribution ID (used by the deploy script).
 - **`scripts/deploy.sh` (manual):**
-  1. `pnpm build`
-  2. `aws s3 sync apps/web/dist s3://$BUCKET --delete`. Hashed `assets/*` get `Cache-Control: public, max-age=31536000, immutable`; `index.html` gets `no-cache`.
-  3. `aws cloudfront create-invalidation --paths /index.html`
+  1. Refuses to run with uncommitted changes, prints the AWS identity, and refuses the root user unless `CRANNY_ALLOW_ROOT=1`.
+  2. `pnpm install --frozen-lockfile`, `pnpm lint`, `typecheck`, `test`, then `pnpm build`.
+  3. Upload `assets/*` first with `Cache-Control: public, max-age=31536000, immutable`, keeping old assets for browsers still on the previous `index.html`. Then sync the rest (`index.html`) with `no-cache` and `--delete`.
+  4. `aws cloudfront create-invalidation --paths "/*"`, which also clears `/` and cached deep-link responses.
   - The bucket and distribution IDs are read from `terraform -chdir=infra output`.
 
 ## 12. Testing

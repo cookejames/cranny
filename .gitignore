@@ -6,3 +6,7 @@ coverage/
 .terraform/
 *.tfstate
 *.tfstate.*
+# Names the Terraform state bucket, which includes the AWS account ID. Generate it from
+# infra/bootstrap (see infra/backend.hcl.example).
+infra/backend.hcl
+*.tfplan
