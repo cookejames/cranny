@@ -25,7 +25,7 @@ Public matchmaking or room lists, spectator-only links, chat or reactions, persi
 ### Rooms
 
 - A room holds **2–8 present players**. A ninth player trying to join is told the room is full. A room can have more **seats** than present players (§2 Seats), up to 16. A player who would need a 17th seat is told the room is full.
-- A room lives while anyone is in it. Once it has been empty for its lease (about 10 minutes, §7), its name can be used again and its scores are gone.
+- A room lives while anyone is in it. Once it is empty, its name can be used again and its scores are gone (§7). Whether a room also has a maximum lifetime is still open (§15).
 
 ### Rounds
 
@@ -86,8 +86,8 @@ apps/web  ──uses──▶  @cranny/multiplayer  ──uses──▶  @cranny
 - **Generated (the default):** three words from a curated list, joined with hyphens, e.g. `amber-otter-quilt`. The list has about 1,300 short (3–6 letter), common, inoffensive, easy-to-spell words with no homophones, giving about 31 bits (roughly 2 billion names). The list lives in `@cranny/multiplayer` and is drawn with `crypto.getRandomValues` (supplied by the caller, since the package has no DOM types).
 - **Custom:** the creator may type their own name instead. It is normalised to lowercase, runs of spaces, underscores and hyphens become one hyphen, and leading and trailing hyphens are trimmed. The result must be 3–32 characters of `[a-z0-9-]`. The form warns: "Short or common names are easy to guess. Anyone who knows the name can join."
 - **Canonical form:** the normalised name is used everywhere (link, directory, display). `/m/<name>` with a non-canonical name redirects to the canonical one, as `/g/:code` does.
-- **Collisions:** creating a room claims the name through the directory (§7). If a live room already has it, the creator sees "That name is in use" and, for a generated name, the app silently draws another.
-- **Reuse:** a name is free again once its room's lease has expired (§7).
+- **Collisions:** creating a room asks the directory whether anyone is in a room with that name (§7). If someone is, the creator sees "That name is in use" and, for a generated name, the app silently draws another. The check is best effort: two players creating the same name at the same moment end up in the same room.
+- **Reuse:** a name is free again as soon as its room is empty (§7).
 
 ## 5. Room state and protocol
 
@@ -218,6 +218,7 @@ Presence is the **only** way the game knows who is online, and providing it is t
 
 - An adapter must report a member as gone within **30 s** of an abrupt drop (closed tab, lost signal, killed app), and at once after a clean `close()`.
 - **Vendors with presence** use it natively: Ably presence, or AWS IoT lifecycle events.
+- **Ably** meets the bound only with `transportParams: { heartbeatInterval: 10000, remainPresentFor: 5000 }`: a silent drop then leaves presence in about 22 s and a crashed client in about 5 s. Ably's defaults take 42 s for a silent drop (ABLY.md §2). Ably keys presence members by `clientId` and connection, so the same player can briefly be present twice after a reconnect; the adapter reports distinct `PlayerId`s, and a player is gone only when none of their connections is left.
 - **Vendors without it** (e.g. API Gateway WebSockets, where `$disconnect` doesn't fire reliably on silent drops) implement presence inside the adapter. Each connection publishes a heartbeat every 10 s, a member silent for 25 s counts as gone, and a clean close publishes a goodbye. `LocalTransport` also says goodbye on `pagehide`, so closing a tab hands over at once. Browsers throttle timers in tabs hidden for a long time, so a background tab's heartbeats can come too late and it drops out of presence until they resume; that's accepted for a development adapter.
 - The game runs **no heartbeat of its own**. Two liveness signals could disagree and elect two hosts.
 - A locked or backgrounded phone usually loses its socket and shows as gone. That is fine, because seats and points survive (§2).
@@ -228,12 +229,7 @@ Presence is the **only** way the game knows who is online, and providing it is t
 
 ## 7. Room directory (`RoomDirectory`)
 
-The directory is the only part that needs something outside the browser. It stops name collisions, lets names be reused, and hands out credentials that only work for one room.
-
-It does two separate jobs, renewed on different schedules, which must not be combined:
-
-- **Room keep-alive:** keeps the room's **name** claimed. Only the host does this, on a fixed timer.
-- **Credential refresh:** keeps one **player's** transport credential valid. Each client does this for itself, only when its credential is about to expire. Credential lifetimes are set by the vendor (Ably defaults to 1 hour) and are longer than most games, so most clients never refresh at all.
+The directory is the only part that needs something outside the browser: vendor API keys can't be shipped to the browser, so something server-side has to hand out credentials. It is **stateless**. It keeps no table of rooms: a room's channel is derived from its name, and whether a room is live comes from the transport's own presence.
 
 ```ts
 interface RoomDirectory {
@@ -245,59 +241,63 @@ interface RoomDirectory {
     name: string,
     self: PlayerId,
   ): Promise<RoomTicket | { error: 'not-found' | 'invalid' | 'unavailable' }>;
-  /** Host only: extend the room's lease. */
-  keepAlive(ticket: RoomTicket): Promise<'ok' | 'lost' | 'unavailable'>;
-  /** Any client: a fresh credential for its own seat, same channel. */
+  /** A tab that already has a seat in this room: no check that anyone is there. */
+  rejoin(name: string, self: PlayerId): Promise<RoomTicket | { error: 'invalid' | 'unavailable' }>;
+  /** A fresh credential for the same channel. */
   refreshCredential(
     ticket: RoomTicket,
     self: PlayerId,
-  ): Promise<RoomCredential | { error: 'not-found' | 'unavailable' }>;
+  ): Promise<RoomCredential | { error: 'unavailable' }>;
 }
 
 type RoomTicket = {
   room: string; // canonical name
-  channel: string; // opaque transport channel id, random, not derived from the name
-  roomKey: string; // random per-room secret from the directory; proves membership for keepAlive and refreshCredential
+  channel: string; // transport channel, derived from the name by the directory (Ably: `room:<name>`); opaque to clients
   credential: RoomCredential;
 };
 
 type RoomCredential = {
   value: unknown; // adapter-specific, e.g. an Ably token; scoped to `channel` only
-  expiresInMs: number; // set by the vendor/directory, independent of the lease
+  expiresInMs: number; // set by the vendor/directory
 };
 ```
 
-- **Leases:** a room is live while its lease hasn't expired. `create` claims a name only if it has no live lease; `join` succeeds only if it does. Both return the same `channel` and `roomKey` to everyone in the room. The **host** calls `keepAlive` about every 4 minutes, and at once on becoming host (§8.2), and each call pushes the lease to 10 minutes from then. When everyone has gone, nobody is host, the lease runs out and the name is free again. A handover takes at most about 30 s (§6.2), well inside the 10 minutes, so the lease doesn't lapse in between. How long the lease lasts, and any maximum room lifetime, depends on the open retention question (§15).
-- **Lost name:** if the lease lapsed anyway (for example the host was offline for over 10 minutes) and the name is still free, `keepAlive` re-claims it for the same channel and returns `ok`. If another room has taken the name meanwhile, it returns `lost`. The room keeps playing on its channel, and the lobby shows "This room's name has been reused, so new players can't join. Everyone here can keep playing." Seat ids and credentials are unaffected.
-- **Credential refresh:** the transport adapter asks for a new credential when the current one is within about 2 minutes of expiring (vendor SDKs usually do this through an auth callback, e.g. Ably's `authCallback`). The adapter calls `refreshCredential`, which never changes the lease. A client whose refresh fails keeps trying until the credential expires, then shows as `reconnecting` (§9 Connection states).
-- **Scoped credentials:** a credential lets its holder publish, subscribe and use presence on **its own channel only**, bound to its own `PlayerId` where the vendor supports that (which is why `create` and `join` take the player's id). The channel id is random, so knowing a room's name gets you in only through the directory. `roomKey` stops anyone outside the room calling `keepAlive` or `refreshCredential` for it.
-- **Directory state:** if the Ably spike shows that channel occupancy can tell the directory whether a room is live (§8.3), then `keepAlive` can be a no-op and the lease comes from occupancy. The interface stays the same either way.
+- **Live** means at least one member is present on the room's channel (§6.2). `create` succeeds only if nobody is; `join` only if someone is. `rejoin` and `refreshCredential` don't check.
+- **Best effort:** the directory reads presence from the vendor, which can lag by a few seconds (ABLY.md §3), and nothing is claimed atomically. That's accepted, because every mistake still ends in a working room:
+  - Two players who create the same name at the same moment both get tickets for the same channel, so they're in the same room. The host rules (§8) leave one host.
+  - A `create` that misses players who are still there (the count read 0 in error, or everyone was reconnecting at once) puts the creator into their room as a new player.
+  - A `join` just after the last player left gets `not-found`.
+- **Reuse:** a name is free again as soon as its room is empty. The room's scores went with its last player (§2).
+- **Rejoin:** a tab whose session storage holds a seat for this room (§10) uses `rejoin` on a reload and on **Try again** after a lost connection. It works even if the tab was the last one in the room, which then carries on with this player as host and a fresh state (§8.1).
+- **Credential refresh:** the transport adapter asks for a new credential when the vendor SDK says the current one is about to expire (Ably calls its `authCallback` about 30 s before expiry). Credential lifetimes are set by the vendor (Ably: at most 1 hour) and are longer than most games, so most clients never refresh at all. A client whose refresh fails keeps trying until the credential expires, then shows as `reconnecting` (§9 Connection states).
+- **Scoped credentials:** a credential lets its holder publish, subscribe and use presence on **its own room's channel only**, bound to its own `PlayerId` where the vendor supports that (which is why every call takes the player's id). For Ably it's a JWT signed by the directory: capability `{"room:<name>": ["publish", "subscribe", "presence"]}`, `x-ably-clientId` = the `PlayerId`, 60 minutes.
+- **The name is the key.** Anyone who knows a room's name can get in (§11). The directory's checks give helpful errors; they aren't access control.
 - **No listing:** nothing enumerates rooms or reveals anything about a room except whether `join` succeeds.
-- **Rate limits:** `create` and `join` are throttled per IP address (e.g. through API Gateway) to slow down guessing names.
+- **Rate limits:** `create`, `join` and `rejoin` are throttled per IP address (through API Gateway) to slow down guessing names.
 - **Implementations:**
-  - `FakeDirectory` (in `@cranny/multiplayer`, in memory, for tests).
-  - `LocalDirectory` (`apps/web/src/net/`, development only: leases kept in local storage via `storage.ts` as `cranny.localRooms.v1`, shared by tabs on the same origin).
-  - `HttpDirectory` (Phase 5), which calls the AWS endpoint. The server design is decided by the Ably spike (§8.3): either a Lambda that checks Ably channel occupancy and signs tokens with no table, or a Lambda plus a DynamoDB table with a TTL for leases. Either way a server piece is needed, because vendor API keys can't be shipped to the browser.
+  - `FakeDirectory` (in `@cranny/multiplayer`, in memory, for tests), with liveness from `FakeTransport` presence.
+  - `LocalDirectory` (`apps/web/src/net/`, development only), with liveness from `LocalTransport` presence.
+  - `HttpDirectory` (Phase 5), which calls the AWS endpoint: one Lambda that validates the name, reads `presenceMembers` from Ably's channel metadata for `create` and `join`, and signs the JWT (§13).
 
 ## 8. Host
 
 ### 8.1 Who is host
 
-- The **creator** starts as host, with a fresh state (round 0, lobby, term 1), and starts the `keepAlive` timer (§7).
-- A client joining a room with **no other members present** (it emptied while its lease was still live) also becomes host, with a fresh state in term 1, and starts the `keepAlive` timer (§7). The old scores are gone, as §1 allows.
+- A client that connects and finds **no other members present** (`connect` resolves with the full presence list, §6.1) becomes host, with a fresh state (round 0, lobby, term 1). This usually means it created the room, but a `rejoin` into an emptied room works the same way; the old scores are gone, as §1 allows.
+- Whether the client called `create`, `join` or `rejoin` doesn't matter. Because `create` is best effort (§7), a creator who finds others present is joining an existing room, and must not start a fresh state that could outrank its host.
 - Otherwise the client sends `hello` and waits for a snapshot. If none arrives within 5 s, it shows "Still connecting…" and keeps trying (it resends `hello` every 5 s).
 - **Fallback:** if a joining client has had no snapshot at all after 15 s (for example two players opened an empty room together and each saw the other, so neither became host), it starts the room itself in **term 0**. Any real host is in term 1 or later and outranks it (§8.2), so a slow host can't be overridden this way; the fallback host just steps down when the real one is heard.
 
 ### 8.2 Handover
 
-- When presence drops the host, every client works out the next host from its latest snapshot: the **present** seat with the lowest `joinOrder` (ties to the lower `PlayerId`). That client becomes host in a **new term** (`term + 1`), applies the presence change, sends a snapshot and calls `keepAlive` (§7). If no seat is present, a present client without a seat takes over the same way, keeping the away seats and their scores.
+- When presence drops the host, every client works out the next host from its latest snapshot: the **present** seat with the lowest `joinOrder` (ties to the lower `PlayerId`). That client becomes host in a **new term** (`term + 1`), applies the presence change and sends a snapshot. If no seat is present, a present client without a seat takes over the same way, keeping the away seats and their scores.
 - **Reigns:** a snapshot's reign is its `term` and host. Reigns are ordered by `term` (later wins), then by the host's `joinOrder` (lower wins), then by `PlayerId` (lower wins). Within one reign, a higher `rev` wins. Every client orders snapshots this way, so they all agree on one host.
 - **Split-brain guard:** a client acting as host that receives a snapshot from a **higher-ranked** reign steps down, takes that snapshot and re-announces itself (resending, §5.2). One that receives a snapshot from a **lower-ranked** reign stays host and sends its own snapshot straight away, so the other host steps down. This settles two players becoming host at once (same term, so `joinOrder` decides) without either depending on the other's `rev`.
 - A former host that comes back after being replaced holds an older term, so it steps down as soon as it hears the new host. Handover happens only when presence drops the current host.
 
 ### 8.3 Ably investigation (Phase 4, before building the Ably adapter)
 
-Answer these and write the findings to `specs/2026-09-25-multiplayer/ABLY.md`:
+Answered in `specs/2026-09-25-multiplayer/ABLY.md` (T4.1), and applied to §6.2, §7, §11 and §13 (T4.2). The questions were:
 
 - Token auth: can a token be limited to one channel's publish, subscribe and presence, with a bound `clientId`? What are the lifetime and renewal rules?
 - How quickly does an abrupt disconnect remove a presence member? Does it meet the 30 s bound (§6.2)? Which connection settings affect it?
@@ -309,7 +309,7 @@ Answer these and write the findings to `specs/2026-09-25-multiplayer/ABLY.md`:
 
 ### 8.4 Future self-hosted AWS transport (design check only)
 
-API Gateway WebSocket API + Lambda + DynamoDB (connections by channel). `$connect` checks the directory credential. Messages fan out through the `@connections` API. Presence comes from the adapter heartbeat (§6.2). AWS IoT Core is an alternative, with MQTT topics per channel, lifecycle events for presence, and a custom authoriser scoped to one topic. Neither is built in this spec; the interfaces in §6 and §7 must allow both.
+API Gateway WebSocket API + Lambda + DynamoDB (connections by channel). `$connect` checks the directory credential, and the directory's liveness check reads the connections table instead of Ably presence. Messages fan out through the `@connections` API. Presence comes from the adapter heartbeat (§6.2). AWS IoT Core is an alternative, with MQTT topics per channel, lifecycle events for presence, and a custom authoriser scoped to one topic. Neither is built in this spec; the interfaces in §6 and §7 must allow both.
 
 ## 9. Screens and flow
 
@@ -368,12 +368,13 @@ Tabs are independent (§2), so everything about a seat is kept in **session stor
 
 ## 11. Security and privacy
 
-- **Room isolation** is the main requirement. A credential only works on one room's random channel (§7). There is no room listing. Presence and messages are scoped to the channel. The conformance suite checks isolation.
+- **Room isolation** is the main requirement. A credential only works on one room's channel (§7), and the vendor enforces that (ABLY.md §1). There is no room listing. Presence and messages are scoped to the channel. The conformance suite checks isolation.
 - **Knowing the name is the key.** Generated names have about 31 bits of entropy, and custom names are weaker; the UI says so (§4). Directory rate limits slow guessing.
 - **Only the room's members see its data:** player names, scores and progress counts. Boards are never sent. The only thing sent about a board is the count of pieces placed.
 - **Untrusted input:** every message is shape-validated. Names are length-limited, have control characters stripped, and are rendered as text only (React escaping, never `innerHTML`).
-- **Short-lived credentials:** tokens last at most an hour and are refreshed per client, separately from the room lease (§7). The directory keeps no personal data, and no message persistence is configured on the vendor.
-- **CSP:** production `security-headers.json` is `default-src 'none'` today, so it blocks websockets and `fetch`. Phase 5/6 adds `connect-src` for exactly the directory API origin and the vendor's hosts found in the spike, and nothing else. The CloudFront policy and `pnpm preview` pick it up as they do now.
+- **Short-lived credentials:** tokens last at most an hour and are refreshed per client (§7). The directory keeps no state and no personal data, and no message persistence is configured on the vendor: check in the Ably dashboard that no channel rule covers `room:*`.
+- **Ably key:** the directory uses a dedicated API key restricted to `room:*` with `publish`, `subscribe`, `presence` and `channel-metadata` (the last for the liveness check, and never put in client tokens), with token revocation enabled.
+- **CSP:** production `security-headers.json` is `default-src 'none'` today, so it blocks websockets and `fetch`. Phase 5/6 adds `connect-src 'self' https://main.realtime.ably.net wss://main.realtime.ably.net https://*.ably-realtime.com wss://*.ably-realtime.com` (the primary host, the fallback hosts and the SDK's connectivity checks; checked in Chrome, ABLY.md §7), plus the directory API origin if it isn't same-origin, and nothing else. The CloudFront policy and `pnpm preview` pick it up as they do now.
 - **Tabs and browsers:** every tab is an independent player holding credentials for only the room it joined. No tab can see another room's players or scores, even in the same browser. One person can hold several seats in a room (tabs, private windows, other browsers). That is accepted under the trust model, and the 8-present and 16-seat limits cap it.
 - **Cheating is out of scope:** a modified client can fake finishes or scores, and that is accepted (§3).
 
@@ -387,9 +388,9 @@ Tabs are independent (§2), so everything about a seat is kept in **session stor
 
 ## 13. Infrastructure (Phases 5–6)
 
-- A directory/token endpoint: an API Gateway HTTP API with per-route throttling, and one Lambda (Node 24, TypeScript, bundled). Its code lives in a new workspace package `apps/rooms-api` (`@cranny/rooms-api`), which reuses name normalisation from `@cranny/multiplayer`. Whether there's a DynamoDB table with TTL depends on the spike.
+- A directory/token endpoint: an API Gateway HTTP API with per-route throttling, and one Lambda (Node 24, TypeScript, bundled). Its code lives in a new workspace package `apps/rooms-api` (`@cranny/rooms-api`), which reuses name normalisation from `@cranny/multiplayer`. There is **no database**. The Lambda validates the name, reads the room channel's `presenceMembers` from Ably's REST channel metadata for `create` and `join`, and signs the JWT itself (HS256, `kid` = the key name) with no Ably SDK.
 - The Ably API key goes in SSM Parameter Store (SecureString), read by the Lambda only. It never appears in Terraform state as a literal or in the web build.
-- Terraform in `infra/` as today. A custom domain (e.g. `rooms.cranny.cooke.ing`) or the CloudFront distribution routing `/api/*` to the API. Pick the same-origin option if the spike finds no reason against it, because that keeps `connect-src` smaller.
+- Terraform in `infra/` as today. A custom domain (e.g. `rooms.cranny.cooke.ing`) or the CloudFront distribution routing `/api/*` to the API. Pick the same-origin option, because that keeps `connect-src` smaller; the spike found no reason against it.
 - `scripts/deploy.sh` also deploys the Lambda. Applying Terraform changes real AWS resources, so only when asked.
 
 ## 14. Testing
@@ -400,19 +401,19 @@ Tabs are independent (§2), so everything about a seat is kept in **session stor
   - Message validators reject malformed, oversized and wrong-protocol messages.
   - Room-name normalisation and generation (word-list size and entropy check, no duplicate words in the list).
 - **Simulations:** several simulated clients over `FakeTransport` with fake timers. A full round with 3 players. The host leaves mid-round, the next host takes over and the countdown carries on. Two hosts at once settle to one, and a replaced host that comes back steps down. A reload mid-round resumes. A player drops and returns during the next round.
-- **Conformance suite** runs against `FakeTransport`, `LocalTransport` (twice: over an in-memory bus with fake timers, and over the real BroadcastChannel with time scaled) and, in Phase 6, `AblyTransport`. The Ably run needs a key, so it is skipped unless `ABLY_TEST_KEY` is set.
+- **Conformance suite** runs against `FakeTransport`, `LocalTransport` (twice: over an in-memory bus with fake timers, and over the real BroadcastChannel with time scaled) and, in Phase 6, `AblyTransport`. The Ably run needs a key, so it is skipped unless `ABLY_KEY` is set.
 - **Web component tests** with `FakeTransport`/`FakeDirectory`: the create and join flows and their errors, lobby Ready and the countdown, the reveal hides blockers until the deadline, the progress strip (ordered by completeness, stable ties) and the hide toggle, the close-out banner, the results and totals, reload restoring the board, per-tab seats (two tabs on one room are two players, a reload keeps the seat and board, a duplicated tab gets a new seat with Web Locks mocked, and two rooms in two tabs keep separate boards).
 - **Manual:** several tabs with `VITE_ROOM_TRANSPORT=local`. After Phase 6, real devices (an iPhone, an Android phone and a desktop), including locking a phone mid-round.
 
 ## 15. Risks and notes
 
-- **Host on a sleeping phone:** a backgrounded host stalls the room until presence drops it (at most 30 s). That is accepted; handover then carries on.
+- **Host on a sleeping phone:** a backgrounded host stalls the room until presence drops it (at most 30 s; about 22 s with Ably, §6.2). That is accepted; handover then carries on.
 - **Latency decides close finishes:** the order is the order of arrival at the host, so the host has a small advantage. Accepted for a casual game.
 - **Vendor limits:** snapshot batching (100 ms) keeps message rates low. The spike confirms Ably limits.
 - **Custom names are guessable.** This is the user's choice, with a warning.
 - **Tab-bound seats:** closing the tab by mistake loses the player's seat (a new tab starts at 0). This is the user's choice: it keeps tabs independent, with no syncing between them.
-- **Open: room retention.** How long a room can last is still to be decided: at most about 8 hours, and probably much less. This sets whether a room has a maximum lifetime even while occupied; the 10-minute empty-room lease (§7) has to fit inside it. Decide before Phase 5 (directory leases). (Seats need no retention rule: session storage ends with the tab.)
+- **Open: room retention.** How long a room can last is still to be decided: at most about 8 hours, and probably much less. This sets whether a room has a maximum lifetime even while occupied. The directory keeps no state (§7), so a maximum would be enforced by the host, for example with the room's age carried in snapshots, which the trust model allows. Decide before Phase 6. (Seats need no retention rule: session storage ends with the tab.)
 
 ## 16. Decisions log
 
-Ad-hoc rooms shared by a phrase or link · generated 3-word names by default, custom allowed, collision-checked, reusable after the room empties · the host client is authoritative, with handover by presence and hosts ordered by term then join order · a new random grid every round · all players Ready, with a 30 s ready timeout once more than half are ready, and the rest sit out · simultaneous reveal after a 3-2-1 · other players' progress as bars (pieces placed), which can be hidden · 30 s close-out after the first finish, otherwise unlimited · scoring 5/3/2/1/0, cumulative for the room's life · late joiners wait for the next round · a seat belongs to one tab and keeps its points through reloads and reconnects, while opening the room in a new tab joins as a new player at 0 · one browser can be in several rooms at once in different tabs · leaving with Finish gives the seat up after a confirmation, removing the score from the scoreboard, and a rejoin starts from 0, and a mid-round reload restores the board · 2–8 players · random editable player names, duplicates suffixed · no server-side verification, but rooms isolated by scoped credentials · a vendor-neutral transport and directory with a conformance suite · Ably first, after a capability spike that decides whether DynamoDB is needed · the feature is called "multiplayer" (routes `/multiplayer`, `/m/:room`) · multiplayer solves don't count toward solo stats.
+Ad-hoc rooms shared by a phrase or link · generated 3-word names by default, custom allowed, collision-checked, reusable after the room empties · the host client is authoritative, with handover by presence and hosts ordered by term then join order · a new random grid every round · all players Ready, with a 30 s ready timeout once more than half are ready, and the rest sit out · simultaneous reveal after a 3-2-1 · other players' progress as bars (pieces placed), which can be hidden · 30 s close-out after the first finish, otherwise unlimited · scoring 5/3/2/1/0, cumulative for the room's life · late joiners wait for the next round · a seat belongs to one tab and keeps its points through reloads and reconnects, while opening the room in a new tab joins as a new player at 0 · one browser can be in several rooms at once in different tabs · leaving with Finish gives the seat up after a confirmation, removing the score from the scoreboard, and a rejoin starts from 0, and a mid-round reload restores the board · 2–8 players · random editable player names, duplicates suffixed · no server-side verification, but rooms isolated by scoped credentials · a vendor-neutral transport and directory with a conformance suite · Ably first, after a capability spike · a stateless directory with no database: channels are named after rooms, liveness comes from presence, and name checks are best effort (T4.2) · the feature is called "multiplayer" (routes `/multiplayer`, `/m/:room`) · multiplayer solves don't count toward solo stats.

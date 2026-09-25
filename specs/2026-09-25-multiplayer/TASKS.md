@@ -64,21 +64,25 @@
 
 ## Phase 4 — Ably investigation (§8.3)
 
-- [ ] **T4.1 Spike.** Answer every question in §8.3 with small experiments against a free Ably account. Write `ABLY.md` with the findings and a recommendation for the directory (Ably-only or Lambda + DynamoDB), the token capability and TTL, the `connect-src` hosts, and any change to the 30 s presence bound or the snapshot rate.
-- [ ] **T4.2 Update this spec** (§7, §11, §13) with the decisions from T4.1 before starting Phase 5.
+- [x] **T4.1 Spike.** Answer every question in §8.3 with small experiments against a free Ably account. Write `ABLY.md` with the findings and a recommendation for the directory (Ably-only or Lambda + DynamoDB), the token capability and TTL, the `connect-src` hosts, and any change to the 30 s presence bound or the snapshot rate.
+  - Done: `ABLY.md`. Ably has no atomic claim, and occupancy lags and activates channels. 60-minute JWTs scoped to one channel with the `clientId` bound. `heartbeatInterval` 10 s + `remainPresentFor` 5 s gives about 22 s for a silent drop (the defaults take 42 s). 100 ms snapshots fit the limits. The `connect-src` list was checked in Chrome.
+- [x] **T4.2 Update this spec** (§7, §11, §13) with the decisions from T4.1 before starting Phase 5.
+  - Done: a stateless directory with no DynamoDB. Channels are `room:<name>`, `create`/`join` check presence as best effort, and a new `rejoin` serves tabs that already have a seat. A client becomes host only when nobody else is present (§8.1). Leases, `keepAlive`, `roomKey` and the lost-name notice are gone. Also §2, §4, §6.2 (the Ably settings), §11 (the key and `connect-src`), §15 and the decisions log.
 
 ## Phase 5 — Directory / token endpoint (§7, §11, §13)
 
-- [ ] **T5.1 `apps/rooms-api`.** The Lambda handler for `create`, `join`, `keepAlive` and `refreshCredential` (per T4.2; `roomKey` checked on the last two), with name validation shared from `@cranny/multiplayer`, and unit tests with the vendor and storage mocked.
-- [ ] **T5.2 Terraform.** The HTTP API with throttling, the Lambda, its IAM role (least privilege), the SSM parameter for the Ably key, the DynamoDB table only if T4.2 says so, and the routing or domain decision. Plan only until asked to apply.
+- [ ] **T5.0 Stateless directory in the package and local adapters** (§7, §8.1). Drop `keepAlive`, `roomKey` and leases from `RoomDirectory`, `RoomTicket`, `FakeDirectory` and `LocalDirectory`. Remove the host `keepAlive` timer and the lost-name notice from `RoomClient` and the lobby, and the `cranny.localRooms.v1` storage key. Add `rejoin`. Derive the channel from the name. Base liveness on transport presence (`FakeTransport`, and `LocalTransport` for `LocalDirectory`). Become host only when `connect` finds nobody else present, whichever call made the ticket. Use `rejoin` for a reload and for Try again when the tab has a seat for the room.
+      _Done when:_ tests cover two simultaneous creates ending in one room with one host, a create into an occupied room joining it without resetting its state, and the last player's reload rejoining.
+- [ ] **T5.1 `apps/rooms-api`.** The Lambda handler for `create`, `join`, `rejoin` and `refreshCredential`, with name validation shared from `@cranny/multiplayer`. It reads `presenceMembers` from Ably's REST channel metadata for `create` and `join`, and signs the JWT without an Ably SDK. Unit tests with the Ably request mocked.
+- [ ] **T5.2 Terraform.** The HTTP API with throttling, the Lambda, its IAM role (least privilege), and the SSM parameter for the Ably key (a dedicated key: `room:*`, publish/subscribe/presence/channel-metadata, revocation on). Route `/api/*` through the CloudFront distribution (same origin). No database. Plan only until asked to apply.
 - [ ] **T5.3 `HttpDirectory` adapter** in `apps/web/src/net/`.
-- [ ] **T5.4 CSP.** Add `connect-src` for the API origin and the Ably hosts to `security-headers.json`, and confirm with `pnpm build && pnpm --filter @cranny/web preview`.
+- [ ] **T5.4 CSP.** Add the `connect-src` from §11 to `security-headers.json`, and confirm with `pnpm build && pnpm --filter @cranny/web preview`.
 - [ ] **T5.5 Deploy script** builds and deploys the Lambda too.
 
 ## Phase 6 — Ably transport and launch
 
-- [ ] **T6.1 `AblyTransport`** using token auth from the ticket (`authCallback` → `refreshCredential` near expiry), presence, and status mapping.
-      _Done when:_ it passes the conformance suite with `ABLY_TEST_KEY` set.
+- [ ] **T6.1 `AblyTransport`** (`ably/modular`: `BaseRealtime` with `WebSocketTransport`, `FetchRequest` and `RealtimePresence`) using token auth from the ticket (`authCallback` returns the ticket's credential first, then calls `refreshCredential`), `transportParams: { heartbeatInterval: 10000, remainPresentFor: 5000 }`, presence de-duplicated by `clientId`, `from` = `message.clientId`, rejected publishes (42913) treated as lost messages, and status mapping.
+      _Done when:_ it passes the conformance suite with `ABLY_KEY` set.
 - [ ] **T6.2 Production switch.** Build with `VITE_ROOM_TRANSPORT=ably`, and the Home Multiplayer button appears.
 - [ ] **T6.3 Real-device test.** A 3+ phone game over mobile data and Wi-Fi: lock the host's phone mid-round, reload a player mid-round, and join late. Check that another room's players are never visible.
 - [ ] **T6.4 Update CLAUDE.md and the README** with multiplayer commands, adapter selection and conventions.
