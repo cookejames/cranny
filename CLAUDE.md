@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Cranny is a puzzle game. Each round, place nine polyomino pieces on a 6×6 grid with 7 randomly blocked squares. Modes: solo against the clock, and later a multiplayer race where the first player to fill their grid wins. Every player in a race gets the same blocked squares.
+Cranny is a puzzle game. Each round, place nine polyomino pieces on a 6×6 grid with 7 randomly blocked squares. Modes: solo against the clock, and multiplayer (planned): ad-hoc rooms where every player gets the same grid each round and scores by finishing order. The feature is called "multiplayer" everywhere (packages, routes, storage keys, UI), not "race".
 
 Piece set (29 squares = 36 − 7 blocked, so a solved grid has no gaps): five 4-square pieces (I, O, T, S, L), two 3-square pieces (straight bar, corner), one domino, one single square. Pieces can be rotated and flipped.
 
@@ -26,7 +26,7 @@ Node 24 (`.nvmrc`), pnpm 12 (installed globally; version recorded in `packageMan
 
 ## Layout
 
-pnpm workspaces: `packages/engine` (`@cranny/engine`, pure TS rules engine, no DOM or React) and `apps/web` (`@cranny/web`: Vite + React 19 + React Router 8, consumes the engine via `workspace:*`). The engine is consumed as TypeScript source (`exports` points at `src/index.ts`), so it has no build step.
+pnpm workspaces: `packages/engine` (`@cranny/engine`, pure TS rules engine, no DOM or React) and `apps/web` (`@cranny/web`: Vite + React 19 + React Router 8, consumes the engine via `workspace:*`). The engine is consumed as TypeScript source (`exports` points at `src/index.ts`), so it has no build step. Planned: `packages/multiplayer` (`@cranny/multiplayer`), the same kind of pure TS package, holding the room protocol, room reducer and the vendor-neutral transport/directory interfaces; vendor adapters go in `apps/web/src/net/`.
 
 TypeScript is pinned to 6.0.x: typescript-eslint doesn't support TypeScript 7 yet. Don't upgrade it until typescript-eslint does. Imports use explicit `.ts` extensions (`allowImportingTsExtensions`), and the engine has no DOM or Node types, so it can't use `performance`, `process` and similar globals.
 
