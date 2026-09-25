@@ -1,0 +1,550 @@
+/* The room's play, waiting and sitting-out views. Heights and gaps must match LAYOUT in layout/layout.ts. */
+.room {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.playHeader,
+.lobbyHeader {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lobbyHeader {
+  height: auto;
+  min-height: 44px;
+}
+
+.back,
+.iconButton {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.back {
+  margin-left: -12px;
+}
+
+.back svg,
+.iconButton svg,
+.ready svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.titleBlock {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.titleBlock[data-closing] .label {
+  color: var(--color-invalid);
+}
+
+.playTitle {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.titleBlock[data-closing] .playTitle {
+  color: var(--color-invalid);
+  font-variant-numeric: tabular-nums;
+}
+
+.timer {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Over the board: the 3-2-1 before the reveal, and "Time's up" once the round is over. */
+.veil {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: color-mix(in oklab, var(--color-ground), transparent 35%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.countdown {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 96px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.veilText {
+  margin: 0;
+  padding: 14px 28px;
+  border-radius: 32px;
+  background: var(--color-ink);
+  color: var(--color-ground);
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+}
+
+/*
+ * The waiting and sitting-out messages are centred in the viewport, not the space under the
+ * strip or the page's box, so they sit in the middle of the screen at any size. They don't take
+ * clicks, so the header's buttons under them still work.
+ */
+.waiting {
+  position: fixed;
+  inset: 0;
+  padding: 0 20px;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.waitingTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.waitingTime {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 48px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+
+.note {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--color-muted);
+}
+
+/* Lobby */
+
+.lobby {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.roomName {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+.share {
+  height: 44px;
+  padding: 0 16px;
+  border: 1.5px solid var(--color-line);
+  border-radius: var(--radius-control);
+  background: transparent;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.notice {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-control);
+  background: var(--color-tile);
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.heading {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.players {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.player {
+  min-height: 48px;
+  padding: 2px 12px 2px 8px;
+  border-radius: var(--radius-control);
+  background: var(--color-tile);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.readyMark {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border: 1.5px solid var(--color-line);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.readyMark[data-ready] {
+  border-color: var(--piece-s4);
+  background: var(--piece-s4);
+  color: var(--color-tile-selected);
+}
+
+.readyMark svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.playerName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.player[data-away] .playerName {
+  color: var(--color-muted);
+}
+
+.nameEditor {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* 16 px stops iOS zooming in on focus. */
+.nameInput {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  padding: 0 8px;
+  border: 1.5px solid var(--color-line);
+  border-radius: 8px;
+  background: var(--color-tile-selected);
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.tag,
+.away {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.tag {
+  margin-left: 6px;
+}
+
+.score {
+  min-width: 2ch;
+  flex-shrink: 0;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.lobbyActions {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lobbyActions .note {
+  text-align: center;
+}
+
+.readyCountdown {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.ready,
+.primary {
+  height: 56px;
+  border: 2px solid var(--color-ink);
+  border-radius: 14px;
+  background: var(--color-ink);
+  color: var(--color-ground);
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+/* Pressed: ready and waiting for the others, so it reads as a state rather than an action. */
+.ready[aria-pressed='true'] {
+  background: var(--color-tile-selected);
+  color: var(--color-ink);
+}
+
+.ready:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.secondary,
+.primaryLink,
+.secondaryLink {
+  min-height: 48px;
+  padding: 0 22px;
+  border: 1.5px solid var(--color-line);
+  border-radius: 14px;
+  background: transparent;
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.primaryLink {
+  border-color: var(--color-ink);
+  background: var(--color-ink);
+  color: var(--color-ground);
+}
+
+.secondary:disabled,
+.primary:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.back:focus-visible,
+.iconButton:focus-visible,
+.share:focus-visible,
+.ready:focus-visible,
+.primary:focus-visible,
+.secondary:focus-visible,
+.primaryLink:focus-visible,
+.secondaryLink:focus-visible,
+.nameInput:focus-visible {
+  outline: 3px solid var(--piece-i4);
+  outline-offset: 2px;
+}
+
+.results {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.results tr {
+  border-bottom: 1px solid var(--color-line);
+}
+
+.results td,
+.results th {
+  height: 40px;
+  padding: 0 4px;
+  text-align: left;
+}
+
+.results tr[data-you] {
+  font-weight: 600;
+}
+
+.place {
+  width: 3.5em;
+  font-weight: 600;
+}
+
+.resultName {
+  font-weight: inherit;
+}
+
+.resultTime {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-muted);
+}
+
+.outcome {
+  color: var(--color-muted);
+}
+
+.results .points {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Connection states */
+
+.reconnecting {
+  position: fixed;
+  top: calc(8px + env(safe-area-inset-top));
+  left: 50%;
+  z-index: 20;
+  margin: 0;
+  padding: 6px 14px;
+  border-radius: 99px;
+  background: var(--color-ink);
+  color: var(--color-ground);
+  font-size: 14px;
+  font-weight: 600;
+  transform: translateX(-50%);
+}
+
+.message {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.messageTitle {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.message .primary {
+  padding: 0 28px;
+}
+
+/* The leave confirmation */
+
+.dialog {
+  width: min(360px, calc(100vw - 32px));
+  padding: 0;
+  border: 0;
+  border-radius: 18px;
+  background: var(--color-ground);
+  color: var(--color-ink);
+  box-shadow: 0 20px 50px rgb(0 0 0 / 0.3);
+}
+
+.dialog::backdrop {
+  background: rgb(29 27 24 / 0.5);
+}
+
+.dialogBody {
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dialogTitle {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.dialogText {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.dialogActions {
+  margin-top: 6px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.dialogActions .primary {
+  height: 48px;
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 600;
+}

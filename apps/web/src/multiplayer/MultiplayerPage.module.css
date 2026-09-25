@@ -1,0 +1,155 @@
+.page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.header {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.back {
+  width: 44px;
+  height: 44px;
+  margin-left: -12px;
+  border-radius: var(--radius-control);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.heading {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* 16 px stops iOS zooming in on focus. */
+.input {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  padding: 0 14px;
+  border: 1.5px solid var(--color-line);
+  border-radius: var(--radius-control);
+  background: var(--color-tile-selected);
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 16px;
+}
+
+.input[aria-invalid='true'] {
+  border-color: var(--color-invalid);
+}
+
+.primary,
+.secondary {
+  height: 48px;
+  padding: 0 16px;
+  border-radius: var(--radius-control);
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.primary {
+  height: 56px;
+  border: 0;
+  background: var(--color-ink);
+  color: var(--color-ground);
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.secondary {
+  border: 1.5px solid var(--color-line);
+  background: transparent;
+}
+
+.primary:disabled,
+.secondary:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.input:focus-visible,
+.primary:focus-visible,
+.secondary:focus-visible,
+.back:focus-visible,
+.disclosure summary:focus-visible {
+  outline: 3px solid var(--piece-i4);
+  outline-offset: 2px;
+}
+
+/* `<details>` doesn't lay its content out reliably as flex, so space the children with margins. */
+.disclosure > :not(summary) {
+  display: block;
+  margin-top: 8px;
+}
+
+.disclosure summary {
+  padding: 12px 0;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.disclosure > .input {
+  width: 100%;
+}
+
+.note {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--color-muted);
+}
+
+.error {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--color-invalid);
+}

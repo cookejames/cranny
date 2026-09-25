@@ -28,15 +28,14 @@ export {
 export {
   cleanPlayerName,
   displayNames,
-  generateRoomName,
   isCleanPlayerName,
   isValidRoomName,
   normaliseRoomName,
   PLAYER_NAME_MAX_LENGTH,
-  randomPlayerName,
   ROOM_NAME_MAX_LENGTH,
   ROOM_NAME_MIN_LENGTH,
 } from './names.ts';
+export { generateRoomName, randomPlayerName } from './randomNames.ts';
 export {
   decodeMessage,
   encodeMessage,

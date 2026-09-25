@@ -36,20 +36,31 @@
 
 ## Phase 3 — Web UI (§9, §10, §12)
 
-- [ ] **T3.1 Storage** (§10). Session-storage access in `storage.ts` (never throws, validates reads). `cranny.player.v1` in local storage, and `cranny.seat.v1` and `cranny.multiplayerRound.v1` in session storage, all validated on read. The Web Lock seat claim for duplicated tabs. Update the CLAUDE.md storage rule to cover `sessionStorage`.
-- [ ] **T3.2 Routes and the Multiplayer screen.** `/multiplayer` and `/m/:room` (with the canonical redirect) in `AppRoutes`, and the Home **Multiplayer** button. Create (generated or custom name, with the warning), Join, and the inline errors.
-- [ ] **T3.3 Shared play area.** Extract the board, tray, drag and controls out of `PlayScreen.tsx` so solo and multiplayer share them. Controls take the set of buttons to show (no New grid in multiplayer).
-      _Done when:_ the existing solo tests pass unchanged.
-- [ ] **T3.4 Lobby.** The room header with Share (generalise `shareGrid`), the player list (score, ready, away, You, rename), the Ready toggle, the ready countdown, and Finish and the back link, both behind the leave confirmation dialog (§9).
-      _Done when:_ tests cover Stay (nothing sent), Leave (`leave` sent, seat and saved board deleted, Home), the leaver's name and score disappearing from everyone else's scoreboard, and a rejoin getting a new seat at 0.
-- [ ] **T3.5 Reveal and playing.** The 3-2-1 over the hidden board (no blockers in the DOM before the reveal), the stopwatch from the local reveal, progress messages on board changes, and the finish message and celebration.
-- [ ] **T3.6 Progress strip** ordered by completeness, most complete on the left (§9: finishers first in finishing order, then by pieces placed, ties stable), with the slide animation and the hide toggle (remembered), and `LAYOUT` updated. The ordering is a pure, unit-tested function.
-      _Done when:_ the layout test fits 375×667 and 390×844 with 7 opponents shown.
-- [ ] **T3.7 Close-out, the waiting view and time's up.** The banner countdown, the locked board, and the sitting-out / next-round view.
-- [ ] **T3.8 Results and totals** in the lobby after a round (placings, times, points, outcomes, and totals sorted by score).
-- [ ] **T3.9 Reload and reconnect.** Restore the tab's seat and multiplayer board (via `resumeRound`), a duplicated tab joining as a new player, the Reconnecting banner, the lost-connection screen, and the protocol and engine-version messages.
-- [ ] **T3.10 Accessibility.** The progress-bar roles, the live-region announcements, `aria-pressed` on Ready, axe on the new screens, and contrast pairs for any new colours.
-- [ ] **T3.11 Multi-tab check.** Play a full multi-round game across 3–4 tabs with the local adapter, including closing the host tab mid-round, reloading a player mid-round, opening the same room in two tabs (two players), duplicating a tab (new player), and two rooms in two tabs.
+- [x] **T3.1 Storage** (§10). Session-storage access in `storage.ts` (never throws, validates reads). `cranny.player.v1` in local storage, and `cranny.seat.v1` and `cranny.multiplayerRound.v1` in session storage, all validated on read. The Web Lock seat claim for duplicated tabs. Update the CLAUDE.md storage rule to cover `sessionStorage`.
+  - Done: `storage.ts` takes a storage area (`local` | `session`). Seat claim in `src/multiplayer/seat.ts` (`claimSeat`, `cranny-seat:<playerId>`); the Hide progress choice is `cranny.multiplayerPrefs.v1` (added to §10).
+- [x] **T3.2 Routes and the Multiplayer screen.** `/multiplayer` and `/m/:room` (with the canonical redirect) in `AppRoutes`, and the Home **Multiplayer** button. Create (generated or custom name, with the warning), Join, and the inline errors.
+  - Done: `src/multiplayer/` (`MultiplayerPage`, `RoomPage`, `RoomScreen`, `session.ts`). The Multiplayer screen hands its ticket to the room screen in memory (`handOff`); a reload or a pasted link joins through the directory. Failed joins (not found, full, invalid) send the player back to `/multiplayer` with the error inline. Both routes are lazy-loaded, and the adapters come from `RoomAdaptersContext` so tests can supply fakes.
+- [x] **T3.3 Shared play area.** Extract the board, tray, drag and controls out of `PlayScreen.tsx` so solo and multiplayer share them. Controls take the set of buttons to show (no New grid in multiplayer).
+  - Done: `src/play/PlayArea.tsx`; `Controls` shows New grid only when given `onNewGrid`, and takes `disabled` for a locked board.
+    _Done when:_ the existing solo tests pass unchanged.
+- [x] **T3.4 Lobby.** The room header with Share (generalise `shareGrid`), the player list (score, ready, away, You, rename), the Ready toggle, the ready countdown, and Finish and the back link, both behind the leave confirmation dialog (§9).
+  - Done: `Lobby.tsx`, `LeaveDialog.tsx`; `shareGrid` is now `shareLink`.
+    _Done when:_ tests cover Stay (nothing sent), Leave (`leave` sent, seat and saved board deleted, Home), the leaver's name and score disappearing from everyone else's scoreboard, and a rejoin getting a new seat at 0.
+- [x] **T3.5 Reveal and playing.** The 3-2-1 over the hidden board (no blockers in the DOM before the reveal), the stopwatch from the local reveal, progress messages on board changes, and the finish message and celebration.
+  - Done: `RoomRound.tsx`. Development only: `/m/<room>?solve` reveals one drop from solved.
+- [x] **T3.6 Progress strip** ordered by completeness, most complete on the left (§9: finishers first in finishing order, then by pieces placed, ties stable), with the slide animation and the hide toggle (remembered), and `LAYOUT` updated. The ordering is a pure, unit-tested function.
+  - Done: `orderProgress` in `progress.ts`, `ProgressStrip.tsx` (FLIP slide), `stripHeight` and `computeLayout(viewport, progress)` in `layout.ts`; 7 opponents fit an iPhone SE with a 255 px board.
+    _Done when:_ the layout test fits 375×667 and 390×844 with 7 opponents shown.
+- [x] **T3.7 Close-out, the waiting view and time's up.** The banner countdown, the locked board, and the sitting-out / next-round view.
+  - Done: the close-out banner replaces the header title while it runs, so the layout doesn't move.
+- [x] **T3.8 Results and totals** in the lobby after a round (placings, times, points, outcomes, and totals sorted by score).
+  - Done: results table, then Totals (the player list sorted by score).
+- [x] **T3.9 Reload and reconnect.** Restore the tab's seat and multiplayer board (via `resumeRound`), a duplicated tab joining as a new player, the Reconnecting banner, the lost-connection screen, and the protocol and engine-version messages.
+  - Done: `RoomRound` restores through `resumeRound`; Reconnecting… pill; lost after 60 s with Try again; newer protocol and newer grid version messages.
+- [x] **T3.10 Accessibility.** The progress-bar roles, the live-region announcements, `aria-pressed` on Ready, axe on the new screens, and contrast pairs for any new colours.
+  - Done: axe covers the Multiplayer screen, lobby, leave dialog, playing with the strip and close-out, sitting out, and results; new contrast pairs added.
+- [x] **T3.11 Multi-tab check.** Play a full multi-round game across 3–4 tabs with the local adapter, including closing the host tab mid-round, reloading a player mid-round, opening the same room in two tabs (two players), duplicating a tab (new player), and two rooms in two tabs.
+  - Done in headless Chrome (four tabs over the local adapters, driven through the DevTools protocol): two rounds, host tab closed mid-round (handover, close-out carried on), a player reloaded mid-round (board and stopwatch restored), same room in several tabs (separate players), a duplicated tab (new seat), a second room in another tab (separate), and Finish (seat removed). Worth repeating by hand on a phone.
 
 ## Phase 4 — Ably investigation (§8.3)
 

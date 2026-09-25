@@ -318,7 +318,8 @@ API Gateway WebSocket API + Lambda + DynamoDB (connections by channel). `$connec
 - `/multiplayer`: the Multiplayer screen (create or join).
 - `/m/:room`: a room (lobby, playing, results). A non-canonical name redirects to the canonical one.
 - Home gains a **Multiplayer** button next to Play. This replaces the v1 rule "no Race or multiplayer card".
-- While `VITE_ROOM_TRANSPORT` is unset (production before Phase 6), the button and both routes are absent: they redirect to `/`.
+- While `VITE_ROOM_TRANSPORT` is unset (production before Phase 6), the button and both routes are absent: they redirect to `/`. The multiplayer screens are loaded on first use (`React.lazy`), so solo play never downloads them.
+- Development only: `/m/<room>?solve` reveals every round with all pieces but the Single placed, as `?solve` does for solo grids, so a round can be finished with one drop.
 
 ### Multiplayer screen (`/multiplayer`)
 
@@ -341,7 +342,7 @@ API Gateway WebSocket API + Lambda + DynamoDB (connections by channel). `$connec
 - The play area is the solo one (board, tray, drag), shared with `PlayScreen` rather than copied (T3.3). The controls are **Rotate, Flip and Clear**; there is no New grid.
 - The header shows the room name, your stopwatch and a **progress strip**: one bar per other participant, each with their name and "5/9". A finished player's bar shows their place ("1st").
 - **Order:** the bars are sorted by how complete each player is, the most complete on the left and the least on the right, so the leaders are always in view. Finished players come first, in finishing order, then everyone else by pieces placed, most first. Ties keep their current order, so bars don't swap without a reason; for the first ordering, ties go by `joinOrder`. When a bar changes position it slides to its new place (about 200 ms; an instant move with `prefers-reduced-motion`). If the strip wraps onto more than one row, the order runs left to right, then top to bottom.
-- **Hide progress:** a toggle collapses the strip to one line ("Progress hidden"), remembered on the device. The layout must still fit an iPhone SE (375×667) with the strip showing for 7 opponents, so `LAYOUT` in `src/layout/layout.ts` is updated.
+- **Hide progress:** a toggle removes the strip altogether (no line or message is left, and the board gets the space), remembered on the device. The layout must still fit an iPhone SE (375×667) with the strip showing for 7 opponents, so `LAYOUT` in `src/layout/layout.ts` is updated.
 - **Close-out:** a banner "Teal Otter finished first · 0:23 left", counting down.
 - **You finish:** the solo celebration, then a waiting view with your place, your time, the progress strip and the close-out countdown.
 - **Round ends before you finish:** your board locks, "Time's up" shows briefly, then the lobby shows the results.
@@ -361,6 +362,7 @@ Tabs are independent (§2), so everything about a seat is kept in **session stor
 - `cranny.seat.v1 = { room, playerId }` (**session** storage): this tab's seat. A tab is in one room at a time, so opening a different room in the tab replaces it with a new seat. It is deleted when the player leaves with Finish (§2).
 - `cranny.multiplayerRound.v1 = { room, round, version, seed, revealedAt, orientations, placements, finishedMs | null }` (**session** storage): this tab's board for the multiplayer round in progress, saved after every change like the solo round. Tabs in different rooms can't overwrite each other's boards, and it is separate from `cranny.round.v1`, so it never overwrites a solo round in progress. It is restored through `resumeRound` (which re-checks every placement) only if the snapshot says the same round is still being played and you're a participant, and cleared when that round ends.
 - **Duplicated tabs:** the browser's "Duplicate tab" copies session storage, which would give two tabs the same seat. So each tab holds a **Web Lock** named `cranny-seat:<playerId>` (`navigator.locks.request` with `ifAvailable: true`) for as long as it's in the room. If the lock is already held when a tab starts, the tab discards the copied seat and board and joins as a new player. The browser releases the lock when a tab closes or crashes, so a reload gets it back. Where Web Locks isn't supported, the check is skipped and a duplicated tab shares the seat; that is accepted.
+- `cranny.multiplayerPrefs.v1 = { hideProgress }` (**local** storage): the Hide progress choice (§9).
 - Multiplayer solves **don't** count toward solo stats (`cranny.stats.v1`).
 - Everything read back is validated, as today.
 

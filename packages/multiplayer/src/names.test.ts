@@ -1,13 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import {
-  cleanPlayerName,
-  displayNames,
-  generateRoomName,
-  isValidRoomName,
-  normaliseRoomName,
-  PLAYER_NAME_WORDS,
-  randomPlayerName,
-} from './names.ts';
+import { cleanPlayerName, displayNames, isValidRoomName, normaliseRoomName } from './names.ts';
+import { generateRoomName, PLAYER_NAME_WORDS, randomPlayerName } from './randomNames.ts';
 import { seededRandom } from './testing/random.ts';
 import { ROOM_WORDS } from './words.ts';
 

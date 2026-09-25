@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { shareGrid, shareText } from './share.ts';
+import { shareLink, shareText } from './share.ts';
 
 const URL = 'https://cranny.cooke.ing/g/1XDWT5H';
 
@@ -20,34 +20,34 @@ function stubNavigator(
 
 afterEach(() => vi.unstubAllGlobals());
 
-describe('shareGrid', () => {
+describe('shareLink', () => {
   it('writes the message from the spec', () => {
     expect(shareText(68_400)).toBe('I solved this Cranny grid in 1:08.4 — can you beat it?');
   });
 
   it('uses the share sheet where there is one', async () => {
     const nav = stubNavigator(() => Promise.resolve());
-    await expect(shareGrid('Solved!', URL)).resolves.toBe('shared');
+    await expect(shareLink('Solved!', URL)).resolves.toBe('shared');
     expect(nav.share).toHaveBeenCalledWith({ title: 'Cranny', text: 'Solved!', url: URL });
     expect(nav.clipboard.writeText).not.toHaveBeenCalled();
   });
 
   it('does nothing more when the player closes the share sheet', async () => {
     const nav = stubNavigator(() => Promise.reject(new DOMException('closed', 'AbortError')));
-    await expect(shareGrid('Solved!', URL)).resolves.toBe('cancelled');
+    await expect(shareLink('Solved!', URL)).resolves.toBe('cancelled');
     expect(nav.clipboard.writeText).not.toHaveBeenCalled();
   });
 
   it('copies the text and link when sharing is unavailable or refused', async () => {
     const nav = stubNavigator(undefined, () => Promise.resolve());
-    await expect(shareGrid('Solved!', URL)).resolves.toBe('copied');
+    await expect(shareLink('Solved!', URL)).resolves.toBe('copied');
     expect(nav.clipboard.writeText).toHaveBeenCalledWith(`Solved! ${URL}`);
 
     stubNavigator(
       () => Promise.reject(new DOMException('no', 'NotAllowedError')),
       () => Promise.resolve(),
     );
-    await expect(shareGrid('Solved!', URL)).resolves.toBe('copied');
+    await expect(shareLink('Solved!', URL)).resolves.toBe('copied');
   });
 
   it('copies by selection where there is no Clipboard API (e.g. plain HTTP)', async () => {
@@ -58,7 +58,7 @@ describe('shareGrid', () => {
       return true;
     });
     Object.defineProperty(document, 'execCommand', { value: execCommand, configurable: true });
-    await expect(shareGrid('Solved!', URL)).resolves.toBe('copied');
+    await expect(shareLink('Solved!', URL)).resolves.toBe('copied');
     expect(execCommand).toHaveBeenCalledWith('copy');
     expect(copied).toBe(`Solved! ${URL}`);
     expect(document.querySelector('textarea')).toBeNull();
@@ -67,6 +67,6 @@ describe('shareGrid', () => {
   it('reports failure when no way of copying works', async () => {
     stubNavigator();
     Object.defineProperty(document, 'execCommand', { value: () => false, configurable: true });
-    await expect(shareGrid('Solved!', URL)).resolves.toBe('failed');
+    await expect(shareLink('Solved!', URL)).resolves.toBe('failed');
   });
 });

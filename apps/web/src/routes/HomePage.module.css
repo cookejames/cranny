@@ -80,7 +80,18 @@
   text-decoration: none;
 }
 
-.play svg {
+.multiplayer {
+  padding: 12px 20px;
+  border: 1.5px solid var(--color-line);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  text-decoration: none;
+}
+
+.play svg,
+.multiplayer svg {
   flex-shrink: 0;
   fill: none;
   stroke: currentColor;
@@ -89,7 +100,8 @@
   stroke-linejoin: round;
 }
 
-.play:focus-visible {
+.play:focus-visible,
+.multiplayer:focus-visible {
   outline: 3px solid var(--piece-i4);
   outline-offset: 3px;
 }
@@ -110,4 +122,9 @@
 .playBlurb {
   font-size: 14px;
   color: var(--color-night-label);
+}
+
+.multiplayerBlurb {
+  font-size: 14px;
+  color: var(--color-muted);
 }

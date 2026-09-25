@@ -1,25 +1,20 @@
-import { generateGrid, PIECE_IDS, solve, type PieceId } from '@cranny/engine';
+import { generateGrid, PIECE_IDS, solve } from '@cranny/engine';
 import { useEffect, useReducer, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Board } from '../board/Board.tsx';
-import { FloatingPiece } from '../drag/FloatingPiece.tsx';
-import { useDrag } from '../drag/useDrag.ts';
 import {
   elapsedMs,
   isPlaced,
   newRound,
-  placedCount,
   resumeRound,
   roundReducer,
   type RoundState,
 } from '../game/round.ts';
 import { recordSolve, type SolveOutcome } from '../game/stats.ts';
 import { clearRound, loadRound, loadStats, saveRound, saveStats } from '../storage/storage.ts';
-import { Controls } from './Controls.tsx';
+import { PlayArea } from './PlayArea.tsx';
 import { PlayHeader } from './PlayHeader.tsx';
 import styles from './PlayScreen.module.css';
 import { Results } from './Results.tsx';
-import { Tray } from './Tray.tsx';
 
 /** How long the completion celebration plays before Results (specs/2026-09-25-single-player/SPEC.md §5). */
 export const CELEBRATION_MS = 700;
@@ -75,7 +70,7 @@ const prefersReducedMotion = () =>
 /**
  * The play screen for one grid (specs/2026-09-25-single-player/SPEC.md §5). Before Start the board is hidden under a Start
  * button; Start reveals it and starts the clock. Pieces are selected, rotated and flipped in the
- * tray and dragged on and off the board (`useDrag`). The drop that fills the grid stops the
+ * tray and dragged on and off the board (`PlayArea`). The drop that fills the grid stops the
  * clock and records the solve in the stats, plays the celebration, then shows Results. The round is saved after every change, so a
  * reload resumes it with the clock still running.
  */
@@ -92,18 +87,6 @@ export function PlayScreen({ version, seed, code, shared, startSolved = false }:
   const solve = useRef<SolveOutcome | null>(null);
   const [results, setResults] = useState<SolveOutcome | null>(null);
   const navigate = useNavigate();
-  const placed = (piece: PieceId) => isPlaced(round, piece);
-  const select = (piece: PieceId) => dispatch({ type: 'select', piece });
-  const {
-    boardRef,
-    trayRef,
-    floatingRef,
-    lifted,
-    floating,
-    preview,
-    onBoardPointerDown,
-    onTrayPointerDown,
-  } = useDrag({ round, active: round.status === 'playing', dispatch, onTrayTap: select });
 
   // Keep one round in progress (specs/2026-09-25-single-player/SPEC.md §5): this one while it's played, none once it's done.
   // Just opening a different grid discards another grid's round.
@@ -162,16 +145,14 @@ export function PlayScreen({ version, seed, code, shared, startSolved = false }:
         shared={shared}
         startedAt={round.startedAt}
         finishedAt={round.finishedAt}
-        isPlaced={placed}
+        isPlaced={(piece) => isPlaced(round, piece)}
       />
-      <Board
-        board={round.board}
+      <PlayArea
+        round={round}
+        dispatch={dispatch}
         hideBlocked={preStart}
-        ref={boardRef}
-        lifted={lifted}
-        preview={preview}
-        onPointerDown={onBoardPointerDown}
         celebrating={round.status === 'complete'}
+        onNewGrid={nextGrid}
         overlay={
           preStart && (
             <div className={styles.veil}>
@@ -186,24 +167,6 @@ export function PlayScreen({ version, seed, code, shared, startSolved = false }:
           )
         }
       />
-      <Controls
-        hasSelection={round.selected !== null}
-        placedCount={placedCount(round)}
-        onRotate={() => dispatch({ type: 'rotate' })}
-        onFlip={() => dispatch({ type: 'flip' })}
-        onClear={() => dispatch({ type: 'clear' })}
-        onNewGrid={nextGrid}
-      />
-      <Tray
-        orientations={round.orientations}
-        isPlaced={placed}
-        selected={round.selected}
-        onSelect={select}
-        onPiecePointerDown={onTrayPointerDown}
-        lifted={lifted}
-        ref={trayRef}
-      />
-      <FloatingPiece floating={floating} ref={floatingRef} />
     </main>
   );
 }

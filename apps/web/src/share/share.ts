@@ -7,6 +7,15 @@ export type ShareResult = 'shared' | 'copied' | 'cancelled' | 'failed';
 export const shareText = (ms: number) =>
   `I solved this Cranny grid in ${formatTime(ms, { tenths: true })} — can you beat it?`;
 
+/** The message shared with a room link (specs/2026-09-25-multiplayer/SPEC.md §9). */
+export const roomShareText = (room: string) => `Join my Cranny room: ${room}`;
+
+/** Toast text for a share result that needs one. */
+export const SHARE_TOASTS: Partial<Record<ShareResult, string>> = {
+  copied: 'Link copied',
+  failed: 'Couldn’t copy the link',
+};
+
 /**
  * Copies text the old way, by selecting it in a hidden textarea: the fallback where the
  * Clipboard API is missing. Browsers leave both `navigator.share` and `navigator.clipboard` out
@@ -35,13 +44,13 @@ function copyBySelection(text: string): boolean {
 }
 
 /**
- * Shares a grid (specs/2026-09-25-single-player/SPEC.md §5): the system share sheet where there is one, otherwise the text and
+ * Shares a link to a grid or a room (specs/2026-09-25-single-player/SPEC.md §5): the system share sheet where there is one, otherwise the text and
  * link are copied to the clipboard (with the Clipboard API, or by selection where that's
  * missing). Never throws.
  *
- * @param url - The grid's absolute link, e.g. `https://cranny.cooke.ing/g/1XDWT5H`.
+ * @param url - The absolute link, e.g. `https://cranny.cooke.ing/g/1XDWT5H`.
  */
-export async function shareGrid(text: string, url: string): Promise<ShareResult> {
+export async function shareLink(text: string, url: string): Promise<ShareResult> {
   if (typeof navigator.share === 'function') {
     try {
       await navigator.share({ title: 'Cranny', text, url });
