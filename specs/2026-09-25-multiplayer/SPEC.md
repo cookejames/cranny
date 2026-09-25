@@ -30,11 +30,11 @@ Public matchmaking or room lists, spectator-only links, chat or reactions, persi
 ### Rounds
 
 1. **Lobby.** Everyone in the room sees the player list and presses **Ready** when they want to play. The last round's results show here too.
-2. **Start.** The round starts as soon as every present player is ready (at least 2), or by the **ready timeout**: once at least 2 players are ready and they are more than half of those present, a 30 s countdown shows. When it reaches zero, the round starts with the players who are ready. If the condition stops holding (someone un-readies or leaves), the countdown is cancelled. Players who weren't ready **sit out** the round: they score 0 and watch the progress bars.
+2. **Start.** The round starts as soon as every present player is ready (at least 2), or by the **ready timeout**: once at least 2 players are ready and they are more than half of those present, a 30 s countdown shows. When it reaches zero, the round starts with the players who are ready. If the condition stops holding (someone un-readies or leaves), the countdown is cancelled. A player who drops is no longer ready, and chooses again when they come back. Players who weren't ready **sit out** the round: they score 0 and watch the progress bars.
 3. **Reveal.** Whichever way the round starts, there is always a **3 s countdown (3-2-1)** before the reveal. When everyone is ready it begins immediately; after a ready timeout it follows the 30 s countdown. The participants are fixed when the 3 s countdown begins, and it can't be cancelled: un-readying or leaving during it doesn't stop it. The host picks a new random seed, and at the end of the countdown the grid (`generateGrid(seed, CURRENT_VERSION)`) is revealed to every participant at once. Each player's stopwatch starts at their reveal.
 4. **Playing.** Players place pieces exactly as in solo play (single-player SPEC §6). Each player sees the others' progress as bars (pieces placed out of 9), never their boards.
 5. **Close-out.** The first player to fill the grid starts a **30 s countdown** for everyone else. Before that there is no time limit.
-6. **End.** The round ends when the countdown reaches zero, or earlier if every present participant has finished. Unfinished boards are locked. Then everyone returns to the lobby with the round's results.
+6. **End.** The round ends when the countdown reaches zero, or earlier if every present participant has finished (once someone has finished; before that, a round whose participants are all away keeps waiting). It also ends if every participant has left with Finish. Unfinished boards are locked. Then everyone returns to the lobby with the round's results.
 
 ### Scoring
 
@@ -56,14 +56,14 @@ Public matchmaking or room lists, spectator-only links, chat or reactions, persi
 - **Kept:** reloading, locking the phone, losing signal or reconnecting in the same tab keeps the seat and its points.
 - **Not kept:** opening the room link in another tab, or again after closing the tab, joins as a **new player at 0**. The old seat stays on the scoreboard as "away", with its score, until the room ends.
 - One browser can be in **several rooms at once**, one per tab, without them affecting each other.
-- **Leaving on purpose** (Finish, or the lobby's back link, after confirming, §9) gives the seat up. The seat is **removed from the room**: the player's name and score disappear from the scoreboard and from the last round's results for everyone still there. The tab forgets the seat (§10), so if they rejoin they get a **new seat starting at 0**.
+- **Leaving on purpose** (Finish, or the lobby's back link, after confirming, §9) gives the seat up. The seat is **removed from the room**: the player's name and score disappear from the scoreboard and from the last round's results for everyone still there. Leaving mid-round also takes the player out of that round, so later finishers move up a place. The tab forgets the seat (§10), so if they rejoin they get a **new seat starting at 0**.
 - **Reload during a round you are playing:** the board is restored from the tab's session storage with the stopwatch still running, and you carry on.
 - **Return during a round you're not in** (you joined late, or you dropped and came back during a later round): you wait in the lobby, watching the progress bars, and play from the next Ready.
 
 ### Names
 
 - **Room names:** see §4.
-- **Player names:** a player starts with a random name (for example "Teal Otter"). They can draw another random name or type their own at any time, including in the lobby. The name they end up with is remembered on the device for next time. Names are 1–16 characters after trimming, with control characters removed. Duplicates are allowed; if two present players share a name, the one who joined later is shown with a suffix (for example "Teal Otter 2").
+- **Player names:** a player starts with a random name (for example "Teal Otter"). They can draw another random name or type their own at any time, including in the lobby. The name they end up with is remembered on the device for next time. Names are 1–16 characters after trimming, with control characters removed. Duplicates are allowed; if two seats in the room (present or away) share a name, the one who joined later is shown with a number (for example "Teal Otter 2"), skipping any label another seat already uses. This matters most for a player who reopens the room in a new tab: their old, away seat and their new one have the same name.
 
 ## 3. Architecture
 
@@ -75,7 +75,7 @@ apps/web  ──uses──▶  @cranny/multiplayer  ──uses──▶  @cranny
    └── src/net/  adapters: LocalTransport, LocalDirectory, (later) AblyTransport, HttpDirectory
 ```
 
-- **`packages/multiplayer` (`@cranny/multiplayer`)**: pure TypeScript, no DOM, no Node types and no vendor SDKs, consumed as source like the engine (`exports` → `src/index.ts`, no build step). It holds everything that decides what happens in a room, so the game logic can be tested without a network and reused by any future server.
+- **`packages/multiplayer` (`@cranny/multiplayer`)**: pure TypeScript, no DOM, no Node types and no vendor SDKs, consumed as source like the engine (`exports` → `src/index.ts`, no build step). Test doubles and the conformance suite are a second entry point, `@cranny/multiplayer/testing`, so Vitest never reaches the app bundle. It holds everything that decides what happens in a room, so the game logic can be tested without a network and reused by any future server.
 - **Adapters** live in `apps/web/src/net/`. They implement the package's `RoomTransport` and `RoomDirectory` interfaces (§6, §7) and are the only code that imports a vendor SDK or touches `BroadcastChannel` or `fetch`.
 - The adapter is chosen at build time by `VITE_ROOM_TRANSPORT` (`local` or `ably`). Production uses `ably` once Phase 6 is done; before that, the Multiplayer entry is hidden in production builds.
 - **Trust model:** every client is trusted. The host's decisions are accepted as they are, and nothing is checked server-side. Every incoming message is still **validated for shape** (as data read back from storage is), so a malformed message can't crash a client.
@@ -84,7 +84,7 @@ apps/web  ──uses──▶  @cranny/multiplayer  ──uses──▶  @cranny
 ## 4. Room names
 
 - **Generated (the default):** three words from a curated list, joined with hyphens, e.g. `amber-otter-quilt`. The list has about 1,300 short (3–6 letter), common, inoffensive, easy-to-spell words with no homophones, giving about 31 bits (roughly 2 billion names). The list lives in `@cranny/multiplayer` and is drawn with `crypto.getRandomValues` (supplied by the caller, since the package has no DOM types).
-- **Custom:** the creator may type their own name instead. It is normalised to lowercase, runs of spaces and underscores become one hyphen, and leading and trailing hyphens are trimmed. The result must be 3–32 characters of `[a-z0-9-]`. The form warns: "Short or common names are easy to guess. Anyone who knows the name can join."
+- **Custom:** the creator may type their own name instead. It is normalised to lowercase, runs of spaces, underscores and hyphens become one hyphen, and leading and trailing hyphens are trimmed. The result must be 3–32 characters of `[a-z0-9-]`. The form warns: "Short or common names are easy to guess. Anyone who knows the name can join."
 - **Canonical form:** the normalised name is used everywhere (link, directory, display). `/m/<name>` with a non-canonical name redirects to the canonical one, as `/g/:code` does.
 - **Collisions:** creating a room claims the name through the directory (§7). If a live room already has it, the creator sees "That name is in use" and, for a generated name, the app silently draws another.
 - **Reuse:** a name is free again once its room's lease has expired (§7).
@@ -134,7 +134,8 @@ type RoundResult = {
 type RoomSnapshot = {
   protocol: 1;
   room: string; // canonical name
-  rev: number; // increases with every change; clients ignore anything older
+  term: number; // increases by one at every host handover (§8.2)
+  rev: number; // increases with every change within a term; clients ignore anything older
   hostId: PlayerId;
   hostJoinOrder: number;
   seats: Seat[];
@@ -160,7 +161,8 @@ Every message is JSON with `protocol: 1`, a `type`, and the sender's `from: Play
 | host → everyone | `snapshot` | `RoomSnapshot`                       | The whole current state                                          |
 | host → one      | `reject`   | `to`, `reason: 'full' \| 'protocol'` | You can't join                                                   |
 
-- Clients send **intents**; only the host changes state. A snapshot replaces the client's copy if its `rev` is newer.
+- Clients send **intents**; only the host changes state. A snapshot replaces the client's copy if it comes from a later **reign** (§8.2), or from the same reign with a higher `rev`.
+- **Resending:** delivery is at most once (§6.1), so a client compares each snapshot with what it has sent: its seat, name, ready choice, progress count and finish. Anything missing is sent again, at most once a second. This also recovers intents lost during a reconnect or a handover.
 - Snapshots are sent after every change, merged to at most one every 100 ms. `progress` messages are only sent when the count changes.
 - A client reads everything from snapshots: its own score, whether it's a participant, when the reveal happens. It never works state out on its own, except when it becomes host.
 - **Protocol versioning:** a client that receives `protocol` greater than its own shows "This room needs a newer version of Cranny. Refresh to update." A host that receives an older one replies `reject` with `reason: 'protocol'`.
@@ -169,7 +171,7 @@ Every message is JSON with `protocol: 1`, a `type`, and the sender's `from: Play
 
 `roomReducer(state, event) → state` in `@cranny/multiplayer` is pure, like `roundReducer`. Its events are the client intents above plus the host's own `presence` changes and `tick` (a deadline passing). The host runs it, and a new host carries on running it from the last snapshot. It implements §2 exactly:
 
-- `hello` from an unknown id creates a seat (if under 8 present and 16 seats). From a known id it updates the name. Either way it prompts a snapshot.
+- `hello` from an unknown id creates a seat (if under 8 present and 16 seats; otherwise the host sends `reject` `full`). From a known id it updates the name. Either way it prompts a snapshot.
 - `leave` deletes the sender's seat: from the seats, the ready set and `lastResult`. If the host itself leaves, it applies its own `leave`, sends the snapshot and closes; presence then hands over as usual (§8.2).
 - Ready rules, the ready timeout, starting a round (seed from the caller, so the reducer stays pure), sitting out, the close-out, ending the round, and scoring.
 - A `finished` for the wrong round, from a non-participant, or a repeat is ignored. So is a `progress` or `finished` that arrives after the round has ended.
@@ -204,6 +206,7 @@ interface RoomConnection {
 }
 ```
 
+- `connect` resolves once the connection is in presence and `presence()` already lists everyone else there, because a client alone in a room becomes its host (§8.1). `publish` rejects while not connected.
 - The only ordering guarantee assumed is that **messages from one sender arrive in the order sent**. There is no guarantee across senders, which the protocol doesn't need.
 - Delivery is at-most-once from the game's point of view. Lost messages are recovered because the next snapshot carries the whole state. A client that reconnects sends `hello` again.
 - Adapters must not depend on message history or persistence being there.
@@ -234,8 +237,14 @@ It does two separate jobs, renewed on different schedules, which must not be com
 
 ```ts
 interface RoomDirectory {
-  create(name: string): Promise<RoomTicket | { error: 'taken' | 'invalid' | 'unavailable' }>;
-  join(name: string): Promise<RoomTicket | { error: 'not-found' | 'invalid' | 'unavailable' }>;
+  create(
+    name: string,
+    self: PlayerId,
+  ): Promise<RoomTicket | { error: 'taken' | 'invalid' | 'unavailable' }>;
+  join(
+    name: string,
+    self: PlayerId,
+  ): Promise<RoomTicket | { error: 'not-found' | 'invalid' | 'unavailable' }>;
   /** Host only: extend the room's lease. */
   keepAlive(ticket: RoomTicket): Promise<'ok' | 'lost' | 'unavailable'>;
   /** Any client: a fresh credential for its own seat, same channel. */
@@ -261,7 +270,7 @@ type RoomCredential = {
 - **Leases:** a room is live while its lease hasn't expired. `create` claims a name only if it has no live lease; `join` succeeds only if it does. Both return the same `channel` and `roomKey` to everyone in the room. The **host** calls `keepAlive` about every 4 minutes, and at once on becoming host (§8.2), and each call pushes the lease to 10 minutes from then. When everyone has gone, nobody is host, the lease runs out and the name is free again. A handover takes at most about 30 s (§6.2), well inside the 10 minutes, so the lease doesn't lapse in between. How long the lease lasts, and any maximum room lifetime, depends on the open retention question (§15).
 - **Lost name:** if the lease lapsed anyway (for example the host was offline for over 10 minutes) and the name is still free, `keepAlive` re-claims it for the same channel and returns `ok`. If another room has taken the name meanwhile, it returns `lost`. The room keeps playing on its channel, and the lobby shows "This room's name has been reused, so new players can't join. Everyone here can keep playing." Seat ids and credentials are unaffected.
 - **Credential refresh:** the transport adapter asks for a new credential when the current one is within about 2 minutes of expiring (vendor SDKs usually do this through an auth callback, e.g. Ably's `authCallback`). The adapter calls `refreshCredential`, which never changes the lease. A client whose refresh fails keeps trying until the credential expires, then shows as `reconnecting` (§9 Connection states).
-- **Scoped credentials:** a credential lets its holder publish, subscribe and use presence on **its own channel only**, bound to its own `PlayerId` where the vendor supports that. The channel id is random, so knowing a room's name gets you in only through the directory. `roomKey` stops anyone outside the room calling `keepAlive` or `refreshCredential` for it.
+- **Scoped credentials:** a credential lets its holder publish, subscribe and use presence on **its own channel only**, bound to its own `PlayerId` where the vendor supports that (which is why `create` and `join` take the player's id). The channel id is random, so knowing a room's name gets you in only through the directory. `roomKey` stops anyone outside the room calling `keepAlive` or `refreshCredential` for it.
 - **Directory state:** if the Ably spike shows that channel occupancy can tell the directory whether a room is live (§8.3), then `keepAlive` can be a no-op and the lease comes from occupancy. The interface stays the same either way.
 - **No listing:** nothing enumerates rooms or reveals anything about a room except whether `join` succeeds.
 - **Rate limits:** `create` and `join` are throttled per IP address (e.g. through API Gateway) to slow down guessing names.
@@ -274,15 +283,17 @@ type RoomCredential = {
 
 ### 8.1 Who is host
 
-- The **creator** starts as host, with a fresh state (round 0, lobby), and starts the `keepAlive` timer (§7).
-- A client joining a room with **no other members present** (it emptied while its lease was still live) also becomes host, with a fresh state, and starts the `keepAlive` timer (§7). The old scores are gone, as §1 allows.
+- The **creator** starts as host, with a fresh state (round 0, lobby, term 1), and starts the `keepAlive` timer (§7).
+- A client joining a room with **no other members present** (it emptied while its lease was still live) also becomes host, with a fresh state in term 1, and starts the `keepAlive` timer (§7). The old scores are gone, as §1 allows.
 - Otherwise the client sends `hello` and waits for a snapshot. If none arrives within 5 s, it shows "Still connecting…" and keeps trying (it resends `hello` every 5 s).
+- **Fallback:** if a joining client has had no snapshot at all after 15 s (for example two players opened an empty room together and each saw the other, so neither became host), it starts the room itself in **term 0**. Any real host is in term 1 or later and outranks it (§8.2), so a slow host can't be overridden this way; the fallback host just steps down when the real one is heard.
 
 ### 8.2 Handover
 
-- When presence drops the host, every client works out the next host from its latest snapshot: the **present** seat with the lowest `joinOrder`. That client becomes host, applies the presence change, sends a snapshot with `rev + 1` and calls `keepAlive` (§7).
-- **Split-brain guard:** if a client acting as host receives a snapshot from a host with a lower `joinOrder` (ties go to the lower `PlayerId`) and a `rev` at least as high as its own, it steps down, takes that snapshot and sends `hello`. If its own `rev` is higher, it stays host and sends its snapshot, and the other host steps down under the same rule. This settles two players becoming host at once, including two players opening an empty room together.
-- A former host that comes back is an ordinary client and doesn't take the role back unless it again has the lowest `joinOrder` among those present. Handover happens only when presence drops the current host.
+- When presence drops the host, every client works out the next host from its latest snapshot: the **present** seat with the lowest `joinOrder` (ties to the lower `PlayerId`). That client becomes host in a **new term** (`term + 1`), applies the presence change, sends a snapshot and calls `keepAlive` (§7). If no seat is present, a present client without a seat takes over the same way, keeping the away seats and their scores.
+- **Reigns:** a snapshot's reign is its `term` and host. Reigns are ordered by `term` (later wins), then by the host's `joinOrder` (lower wins), then by `PlayerId` (lower wins). Within one reign, a higher `rev` wins. Every client orders snapshots this way, so they all agree on one host.
+- **Split-brain guard:** a client acting as host that receives a snapshot from a **higher-ranked** reign steps down, takes that snapshot and re-announces itself (resending, §5.2). One that receives a snapshot from a **lower-ranked** reign stays host and sends its own snapshot straight away, so the other host steps down. This settles two players becoming host at once (same term, so `joinOrder` decides) without either depending on the other's `rev`.
+- A former host that comes back after being replaced holds an older term, so it steps down as soon as it hears the new host. Handover happens only when presence drops the current host.
 
 ### 8.3 Ably investigation (Phase 4, before building the Ably adapter)
 
@@ -386,7 +397,7 @@ Tabs are independent (§2), so everything about a seat is kept in **session stor
   - `roomReducer`: ready-all start, ready-timeout start and cancel, sitting out, minimum 2 players, reveal, progress, first finish opens the close-out, the round ends at the deadline and early when everyone present has finished, late and duplicate finishes are ignored, seat creation, the 8-present and 16-seat limits, returning seats keep points, `leave` removes the seat and its score (including from `lastResult`) and a later `hello` from that device makes a new seat at 0, and late joiners wait.
   - Message validators reject malformed, oversized and wrong-protocol messages.
   - Room-name normalisation and generation (word-list size and entropy check, no duplicate words in the list).
-- **Simulations:** several simulated clients over `FakeTransport` with fake timers. A full round with 3 players. The host leaves mid-round, the next host takes over and the countdown carries on. Two hosts at once settle to one. A reload mid-round resumes. A player drops and returns during the next round.
+- **Simulations:** several simulated clients over `FakeTransport` with fake timers. A full round with 3 players. The host leaves mid-round, the next host takes over and the countdown carries on. Two hosts at once settle to one, and a replaced host that comes back steps down. A reload mid-round resumes. A player drops and returns during the next round.
 - **Conformance suite** runs against `FakeTransport`, `LocalTransport` (jsdom's BroadcastChannel or a polyfill) and, in Phase 6, `AblyTransport`. The Ably run needs a key, so it is skipped unless `ABLY_TEST_KEY` is set.
 - **Web component tests** with `FakeTransport`/`FakeDirectory`: the create and join flows and their errors, lobby Ready and the countdown, the reveal hides blockers until the deadline, the progress strip (ordered by completeness, stable ties) and the hide toggle, the close-out banner, the results and totals, reload restoring the board, per-tab seats (two tabs on one room are two players, a reload keeps the seat and board, a duplicated tab gets a new seat with Web Locks mocked, and two rooms in two tabs keep separate boards).
 - **Manual:** several tabs with `VITE_ROOM_TRANSPORT=local`. After Phase 6, real devices (an iPhone, an Android phone and a desktop), including locking a phone mid-round.
@@ -402,4 +413,4 @@ Tabs are independent (§2), so everything about a seat is kept in **session stor
 
 ## 16. Decisions log
 
-Ad-hoc rooms shared by a phrase or link · generated 3-word names by default, custom allowed, collision-checked, reusable after the room empties · the host client is authoritative, with handover by presence · a new random grid every round · all players Ready, with a 30 s ready timeout once more than half are ready, and the rest sit out · simultaneous reveal after a 3-2-1 · other players' progress as bars (pieces placed), which can be hidden · 30 s close-out after the first finish, otherwise unlimited · scoring 5/3/2/1/0, cumulative for the room's life · late joiners wait for the next round · a seat belongs to one tab and keeps its points through reloads and reconnects, while opening the room in a new tab joins as a new player at 0 · one browser can be in several rooms at once in different tabs · leaving with Finish gives the seat up after a confirmation, removing the score from the scoreboard, and a rejoin starts from 0, and a mid-round reload restores the board · 2–8 players · random editable player names, duplicates suffixed · no server-side verification, but rooms isolated by scoped credentials · a vendor-neutral transport and directory with a conformance suite · Ably first, after a capability spike that decides whether DynamoDB is needed · the feature is called "multiplayer" (routes `/multiplayer`, `/m/:room`) · multiplayer solves don't count toward solo stats.
+Ad-hoc rooms shared by a phrase or link · generated 3-word names by default, custom allowed, collision-checked, reusable after the room empties · the host client is authoritative, with handover by presence and hosts ordered by term then join order · a new random grid every round · all players Ready, with a 30 s ready timeout once more than half are ready, and the rest sit out · simultaneous reveal after a 3-2-1 · other players' progress as bars (pieces placed), which can be hidden · 30 s close-out after the first finish, otherwise unlimited · scoring 5/3/2/1/0, cumulative for the room's life · late joiners wait for the next round · a seat belongs to one tab and keeps its points through reloads and reconnects, while opening the room in a new tab joins as a new player at 0 · one browser can be in several rooms at once in different tabs · leaving with Finish gives the seat up after a confirmation, removing the score from the scoreboard, and a rejoin starts from 0, and a mid-round reload restores the board · 2–8 players · random editable player names, duplicates suffixed · no server-side verification, but rooms isolated by scoped credentials · a vendor-neutral transport and directory with a conformance suite · Ably first, after a capability spike that decides whether DynamoDB is needed · the feature is called "multiplayer" (routes `/multiplayer`, `/m/:room`) · multiplayer solves don't count toward solo stats.

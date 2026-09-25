@@ -26,7 +26,7 @@ Node 24 (`.nvmrc`), pnpm 12 (installed globally; version recorded in `packageMan
 
 ## Layout
 
-pnpm workspaces: `packages/engine` (`@cranny/engine`, pure TS rules engine, no DOM or React) and `apps/web` (`@cranny/web`: Vite + React 19 + React Router 8, consumes the engine via `workspace:*`). The engine is consumed as TypeScript source (`exports` points at `src/index.ts`), so it has no build step. Planned: `packages/multiplayer` (`@cranny/multiplayer`), the same kind of pure TS package, holding the room protocol, room reducer and the vendor-neutral transport/directory interfaces; vendor adapters go in `apps/web/src/net/`.
+pnpm workspaces: `packages/engine` (`@cranny/engine`, pure TS rules engine, no DOM or React) and `apps/web` (`@cranny/web`: Vite + React 19 + React Router 8, consumes the engine via `workspace:*`). The engine is consumed as TypeScript source (`exports` points at `src/index.ts`), so it has no build step. `packages/multiplayer` (`@cranny/multiplayer`) is the same kind of pure TS package, holding the room protocol, room reducer, `RoomClient` and the vendor-neutral transport/directory interfaces; its fakes and the transport conformance suite are a separate entry point, `@cranny/multiplayer/testing`, so Vitest stays out of the app bundle. Vendor adapters go in `apps/web/src/net/`. It has no `setTimeout` or `crypto` types either, so timers and randomness are injected (`Clock`, `RandomSource`).
 
 TypeScript is pinned to 6.0.x: typescript-eslint doesn't support TypeScript 7 yet. Don't upgrade it until typescript-eslint does. Imports use explicit `.ts` extensions (`allowImportingTsExtensions`), and the engine has no DOM or Node types, so it can't use `performance`, `process` and similar globals.
 

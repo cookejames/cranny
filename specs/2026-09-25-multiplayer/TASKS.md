@@ -7,19 +7,22 @@
 
 ## Phase 1 — `@cranny/multiplayer` package (§3, §5, §6, §7)
 
-- [ ] **T1.1 Package scaffold.** `packages/multiplayer` consumed as source (`exports` → `src/index.ts`), strict TS, Vitest, lint and typecheck wired into the root scripts. No DOM, Node or vendor types. It depends on `@cranny/engine` via `workspace:*`.
+- [x] **T1.1 Package scaffold.** `packages/multiplayer` consumed as source (`exports` → `src/index.ts`), strict TS, Vitest, lint and typecheck wired into the root scripts. No DOM, Node or vendor types. It depends on `@cranny/engine` via `workspace:*`.
       _Done when:_ `pnpm lint && pnpm typecheck && pnpm test` pass with the empty package.
-- [ ] **T1.2 Names** (§2 Names, §4). The room-name word list (about 1,300 words), `generateRoomName(randomInts)`, `normaliseRoomName`, the player-name generator ("Teal Otter") and `cleanPlayerName`.
+- [x] **T1.2 Names** (§2 Names, §4). The room-name word list (about 1,300 words), `generateRoomName(randomInts)`, `normaliseRoomName`, the player-name generator ("Teal Otter") and `cleanPlayerName`.
       _Done when:_ the tests cover normalisation, the length and charset rules, the word list having no duplicates, and its size giving at least 30 bits.
-- [ ] **T1.3 Protocol** (§5.1, §5.2). The state and message types, `PROTOCOL_VERSION = 1`, and validators for every message and snapshot (shape, 8 KB limit, protocol version).
+      _Done:_ 1,394 words (about 31.3 bits), filtered for homophones including UK non-rhotic ones. Also `displayNames` for the duplicate-name suffix, and `randomPlayerId`.
+- [x] **T1.3 Protocol** (§5.1, §5.2). The state and message types, `PROTOCOL_VERSION = 1`, and validators for every message and snapshot (shape, 8 KB limit, protocol version).
       _Done when:_ malformed, oversized and future-protocol inputs are rejected without throwing.
-- [ ] **T1.4 Scoring** (§2 Scoring). `pointsFor(place)` and `roundResult(round)`.
-- [ ] **T1.5 Room reducer** (§2, §5.3). `roomReducer` covering seats and limits, rename, `leave` (seat and score removed), ready and the ready timeout, sitting out, the round start (seed passed in), reveal, progress, the close-out, the round end, scoring into totals, and late or duplicate messages. Deadlines are passed in as local times, so it stays pure.
+      _Done:_ the snapshot gained `term` (§8.2).
+- [x] **T1.4 Scoring** (§2 Scoring). `pointsFor(place)` and `roundResult(round)`.
+- [x] **T1.5 Room reducer** (§2, §5.3). `roomReducer` covering seats and limits, rename, `leave` (seat and score removed), ready and the ready timeout, sitting out, the round start (seed passed in), reveal, progress, the close-out, the round end, scoring into totals, and late or duplicate messages. Deadlines are passed in as local times, so it stays pure.
       _Done when:_ every rule in §2 has a test.
-- [ ] **T1.6 Transport and directory interfaces** (§6.1, §7), plus `FakeTransport` (in memory, deterministic, with a way to simulate abrupt drops) and `FakeDirectory` (leases and credential expiry on an injected clock, kept separate: `keepAlive` extends the lease, `refreshCredential` never does).
-- [ ] **T1.7 Room client** (§5.2, §5.4, §8). A framework-free `RoomClient` that owns a connection: it sends `hello` and resends it, applies snapshots by `rev`, turns remaining times into local deadlines, runs the reducer and the deadlines while host, handles handover and the split-brain guard, merges snapshots to one per 100 ms, and re-sends progress and finishes after reconnecting, and runs the host-only `keepAlive` timer (starting at once on becoming host, and showing the lost-name notice on `lost`). It exposes a subscribable view state for React.
+- [x] **T1.6 Transport and directory interfaces** (§6.1, §7; `create` and `join` also take the player's id), plus `FakeTransport` (in memory, deterministic, with a way to simulate abrupt drops) and `FakeDirectory` (leases and credential expiry on an injected clock, kept separate: `keepAlive` extends the lease, `refreshCredential` never does).
+- [x] **T1.7 Room client** (§5.2, §5.4, §8). A framework-free `RoomClient` that owns a connection: it sends `hello` and resends it, applies snapshots by `rev`, turns remaining times into local deadlines, runs the reducer and the deadlines while host, handles handover and the split-brain guard, merges snapshots to one per 100 ms, and re-sends progress and finishes after reconnecting, and runs the host-only `keepAlive` timer (starting at once on becoming host, and showing the lost-name notice on `lost`). It exposes a subscribable view state for React.
       _Done when:_ the §14 simulations pass: a 3-player round, the host leaving mid-round (countdown kept), two hosts settling, a reload mid-round, and a player dropping and returning during the next round.
-- [ ] **T1.8 Conformance suite** (§6.3). `describeTransportConformance(name, makeHarness)`, run against `FakeTransport`.
+      _Done:_ also resends intents a snapshot shows were lost (§5.2), and the 15 s term-0 fallback host (§8.1).
+- [x] **T1.8 Conformance suite** (§6.3). `describeTransportConformance(name, makeHarness)`, run against `FakeTransport`. Exported with the fakes from `@cranny/multiplayer/testing`.
 
 ## Phase 2 — Local adapters (§3, §7)
 
