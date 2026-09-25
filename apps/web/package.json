@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@cranny/engine": "workspace:*",
+    "@cranny/multiplayer": "workspace:*",
     "@fontsource/bricolage-grotesque": "^5.3.0",
     "@fontsource/dm-mono": "^5.3.0",
     "@fontsource/instrument-sans": "^5.3.0",

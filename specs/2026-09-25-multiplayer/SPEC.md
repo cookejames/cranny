@@ -77,7 +77,7 @@ apps/web  ──uses──▶  @cranny/multiplayer  ──uses──▶  @cranny
 
 - **`packages/multiplayer` (`@cranny/multiplayer`)**: pure TypeScript, no DOM, no Node types and no vendor SDKs, consumed as source like the engine (`exports` → `src/index.ts`, no build step). Test doubles and the conformance suite are a second entry point, `@cranny/multiplayer/testing`, so Vitest never reaches the app bundle. It holds everything that decides what happens in a room, so the game logic can be tested without a network and reused by any future server.
 - **Adapters** live in `apps/web/src/net/`. They implement the package's `RoomTransport` and `RoomDirectory` interfaces (§6, §7) and are the only code that imports a vendor SDK or touches `BroadcastChannel` or `fetch`.
-- The adapter is chosen at build time by `VITE_ROOM_TRANSPORT` (`local` or `ably`). Production uses `ably` once Phase 6 is done; before that, the Multiplayer entry is hidden in production builds.
+- The adapter is chosen at build time by `VITE_ROOM_TRANSPORT` (`local` or `ably`), in one module (`src/net/adapters.ts`). `pnpm dev` uses `local` (from `apps/web/.env.development`), and the build fails on any other value. Production uses `ably` once Phase 6 is done; before that, the Multiplayer entry is hidden in production builds.
 - **Trust model:** every client is trusted. The host's decisions are accepted as they are, and nothing is checked server-side. Every incoming message is still **validated for shape** (as data read back from storage is), so a malformed message can't crash a client.
 - **The engine is unchanged.** Generator v1 stays frozen, and a round's grid is identified by `(version, seed)` as in share links.
 
@@ -218,7 +218,7 @@ Presence is the **only** way the game knows who is online, and providing it is t
 
 - An adapter must report a member as gone within **30 s** of an abrupt drop (closed tab, lost signal, killed app), and at once after a clean `close()`.
 - **Vendors with presence** use it natively: Ably presence, or AWS IoT lifecycle events.
-- **Vendors without it** (e.g. API Gateway WebSockets, where `$disconnect` doesn't fire reliably on silent drops) implement presence inside the adapter. Each connection publishes a heartbeat every 10 s, a member silent for 25 s counts as gone, and a clean close publishes a goodbye.
+- **Vendors without it** (e.g. API Gateway WebSockets, where `$disconnect` doesn't fire reliably on silent drops) implement presence inside the adapter. Each connection publishes a heartbeat every 10 s, a member silent for 25 s counts as gone, and a clean close publishes a goodbye. `LocalTransport` also says goodbye on `pagehide`, so closing a tab hands over at once. Browsers throttle timers in tabs hidden for a long time, so a background tab's heartbeats can come too late and it drops out of presence until they resume; that's accepted for a development adapter.
 - The game runs **no heartbeat of its own**. Two liveness signals could disagree and elect two hosts.
 - A locked or backgrounded phone usually loses its socket and shows as gone. That is fine, because seats and points survive (§2).
 
@@ -276,7 +276,7 @@ type RoomCredential = {
 - **Rate limits:** `create` and `join` are throttled per IP address (e.g. through API Gateway) to slow down guessing names.
 - **Implementations:**
   - `FakeDirectory` (in `@cranny/multiplayer`, in memory, for tests).
-  - `LocalDirectory` (`apps/web/src/net/`, development only: leases kept in local storage via `storage.ts`, shared by tabs on the same origin).
+  - `LocalDirectory` (`apps/web/src/net/`, development only: leases kept in local storage via `storage.ts` as `cranny.localRooms.v1`, shared by tabs on the same origin).
   - `HttpDirectory` (Phase 5), which calls the AWS endpoint. The server design is decided by the Ably spike (§8.3): either a Lambda that checks Ably channel occupancy and signs tokens with no table, or a Lambda plus a DynamoDB table with a TTL for leases. Either way a server piece is needed, because vendor API keys can't be shipped to the browser.
 
 ## 8. Host
@@ -398,7 +398,7 @@ Tabs are independent (§2), so everything about a seat is kept in **session stor
   - Message validators reject malformed, oversized and wrong-protocol messages.
   - Room-name normalisation and generation (word-list size and entropy check, no duplicate words in the list).
 - **Simulations:** several simulated clients over `FakeTransport` with fake timers. A full round with 3 players. The host leaves mid-round, the next host takes over and the countdown carries on. Two hosts at once settle to one, and a replaced host that comes back steps down. A reload mid-round resumes. A player drops and returns during the next round.
-- **Conformance suite** runs against `FakeTransport`, `LocalTransport` (jsdom's BroadcastChannel or a polyfill) and, in Phase 6, `AblyTransport`. The Ably run needs a key, so it is skipped unless `ABLY_TEST_KEY` is set.
+- **Conformance suite** runs against `FakeTransport`, `LocalTransport` (twice: over an in-memory bus with fake timers, and over the real BroadcastChannel with time scaled) and, in Phase 6, `AblyTransport`. The Ably run needs a key, so it is skipped unless `ABLY_TEST_KEY` is set.
 - **Web component tests** with `FakeTransport`/`FakeDirectory`: the create and join flows and their errors, lobby Ready and the countdown, the reveal hides blockers until the deadline, the progress strip (ordered by completeness, stable ties) and the hide toggle, the close-out banner, the results and totals, reload restoring the board, per-tab seats (two tabs on one room are two players, a reload keeps the seat and board, a duplicated tab gets a new seat with Web Locks mocked, and two rooms in two tabs keep separate boards).
 - **Manual:** several tabs with `VITE_ROOM_TRANSPORT=local`. After Phase 6, real devices (an iPhone, an Android phone and a desktop), including locking a phone mid-round.
 

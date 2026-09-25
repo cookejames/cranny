@@ -26,10 +26,13 @@
 
 ## Phase 2 — Local adapters (§3, §7)
 
-- [ ] **T2.1 `LocalTransport`** (`apps/web/src/net/`): BroadcastChannel per channel id, with presence by heartbeat (10 s / 25 s, §6.2) and a goodbye on close.
+- [x] **T2.1 `LocalTransport`** (`apps/web/src/net/`): BroadcastChannel per channel id, with presence by heartbeat (10 s / 25 s, §6.2) and a goodbye on close.
       _Done when:_ it passes the conformance suite.
-- [ ] **T2.2 `LocalDirectory`**: leases in local storage through `storage.ts`, with a random channel id and room key per room; `keepAlive` and `refreshCredential` as in §7.
-- [ ] **T2.3 Adapter selection.** `VITE_ROOM_TRANSPORT` (`local` | `ably` | unset) picks the adapters in one module, and the multiplayer routes and entry are absent when it's unset (§9 Routes). `pnpm dev` defaults to `local`.
+      _Done:_ the suite runs twice, over an in-memory bus with fake timers (the real 10 s / 25 s) and over the real BroadcastChannel at 20× speed. Also a goodbye on `pagehide` (so a closed tab hands over at once), re-announcing on a back/forward-cache `pageshow` or after a long timer gap (a frozen tab), and the ticket's credential must be for this channel and player. An integration test runs two `RoomClient`s over the local adapters.
+- [x] **T2.2 `LocalDirectory`**: leases in local storage through `storage.ts`, with a random channel id and room key per room; `keepAlive` and `refreshCredential` as in §7.
+      _Done:_ `cranny.localRooms.v1`, with room keys kept a day past their lease so a late `keepAlive` can re-claim the name. Calls hold a Web Lock where the browser has them, so two tabs can't claim one name at once.
+- [x] **T2.3 Adapter selection.** `VITE_ROOM_TRANSPORT` (`local` | `ably` | unset) picks the adapters in one module, and the multiplayer routes and entry are absent when it's unset (§9 Routes). `pnpm dev` defaults to `local`.
+      _Done:_ `src/net/adapters.ts` (`multiplayerEnabled`, `roomAdapters()`), `local` from `apps/web/.env.development`, and the build fails on any other value (`ably` is added in Phase 6). A build without it leaves the adapters out of the bundle. The routes and Home button use `multiplayerEnabled` in T3.2.
 
 ## Phase 3 — Web UI (§9, §10, §12)
 
