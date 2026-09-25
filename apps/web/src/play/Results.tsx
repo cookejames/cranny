@@ -4,7 +4,7 @@ import { Link } from 'react-router';
 import { Board } from '../board/Board.tsx';
 import { formatTime } from '../game/formatTime.ts';
 import type { SolveOutcome } from '../game/stats.ts';
-import { shareGrid, shareText } from '../share/share.ts';
+import { SHARE_TOASTS, shareLink, shareText } from '../share/share.ts';
 import styles from './Results.module.css';
 import { Toast } from './Toast.tsx';
 
@@ -22,12 +22,6 @@ type ResultsProps = {
 /** The thumbnail's size: 220 px as designed, smaller on short screens so everything fits. */
 const thumbnailStyle = { '--board-size': 'min(220px, 28dvh)' } as CSSProperties;
 
-/** Toast text for a share that needs one. */
-const SHARE_TOASTS: Partial<Record<Awaited<ReturnType<typeof shareGrid>>, string>> = {
-  copied: 'Link copied',
-  failed: 'Couldn’t copy the link',
-};
-
 /**
  * The Results view after a solve (specs/2026-09-25-single-player/SPEC.md §5, `design/Complete.dc.html`): the final time, a
  * personal-best flag, the solved board, stats cards, and Next grid, Share grid and Home.
@@ -39,7 +33,7 @@ export function Results({ code, shared, board, outcome, onNextGrid }: ResultsPro
   /** Shares the grid link, with a toast if it was copied instead or couldn't be shared. */
   const share = async () => {
     const url = new URL(`/g/${code}`, window.location.origin).href;
-    const result = await shareGrid(shareText(outcome.ms), url);
+    const result = await shareLink(shareText(outcome.ms), url);
     setToast(SHARE_TOASTS[result] ?? null);
   };
 

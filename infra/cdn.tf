@@ -59,6 +59,15 @@ data "aws_cloudfront_cache_policy" "optimized" {
   name = "Managed-CachingOptimized"
 }
 
+# For /api/*: never cache, and forward everything but Host (API Gateway needs its own).
+data "aws_cloudfront_cache_policy" "disabled" {
+  name = "Managed-CachingDisabled"
+}
+
+data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" {
+  name = "Managed-AllViewerExceptHostHeader"
+}
+
 resource "aws_cloudfront_distribution" "site" {
   enabled             = true
   comment             = "Cranny"
@@ -75,6 +84,31 @@ resource "aws_cloudfront_distribution" "site" {
     origin_access_control_id = aws_cloudfront_origin_access_control.site.id
   }
 
+  # The rooms API (rooms.tf), same-origin so the CSP's connect-src needs only 'self' for it.
+  origin {
+    origin_id   = "rooms-api"
+    domain_name = replace(aws_apigatewayv2_api.rooms.api_endpoint, "https://", "")
+
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "https-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
+  ordered_cache_behavior {
+    path_pattern               = "/api/*"
+    target_origin_id           = "rooms-api"
+    viewer_protocol_policy     = "https-only"
+    allowed_methods            = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods             = ["GET", "HEAD"]
+    compress                   = true
+    cache_policy_id            = data.aws_cloudfront_cache_policy.disabled.id
+    origin_request_policy_id   = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.security.id
+  }
+
   default_cache_behavior {
     target_origin_id           = "site"
     viewer_protocol_policy     = "redirect-to-https"
@@ -86,7 +120,8 @@ resource "aws_cloudfront_distribution" "site" {
   }
 
   # SPA deep links (SPEC.md §11): /g/<code> isn't a file, so S3 answers 403 (no ListBucket
-  # permission) or 404. Serve the app instead, with 200, and let the router take over.
+  # permission) or 404. Serve the app instead, with 200, and let the router take over. This
+  # applies to every origin, so the rooms API never answers 403 or 404 (apps/rooms-api/src/api.ts).
   dynamic "custom_error_response" {
     for_each = [403, 404]
     content {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeLayout, LAYOUT } from './layout.ts';
+import { computeLayout, LAYOUT, STRIP, stripHeight } from './layout.ts';
 
 describe('computeLayout', () => {
   it.each([
@@ -34,5 +34,31 @@ describe('computeLayout', () => {
 
   it('keeps tray tiles at least 44 px tall (touch target)', () => {
     expect(computeLayout({ width: 320, height: 480 }).tile).toBeGreaterThanOrEqual(44);
+  });
+
+  it('fits an iPhone SE with the multiplayer strip showing 7 opponents', () => {
+    const progress = stripHeight(7, false);
+    const layout = computeLayout({ width: 375, height: 667 }, progress);
+    expect(layout.contentHeight).toBeLessThanOrEqual(667);
+    expect(layout.board).toBeGreaterThan(LAYOUT.minBoard);
+  });
+});
+
+describe('stripHeight', () => {
+  it('takes a row per four opponents, one row when empty, and nothing when hidden', () => {
+    expect(stripHeight(0, false)).toBe(STRIP.rowHeight);
+    expect(stripHeight(4, false)).toBe(STRIP.rowHeight);
+    expect(stripHeight(5, false)).toBe(2 * STRIP.rowHeight + STRIP.rowGap);
+    expect(stripHeight(7, false)).toBe(2 * STRIP.rowHeight + STRIP.rowGap);
+    expect(stripHeight(7, true)).toBe(0);
+  });
+});
+
+describe('computeLayout without a progress row', () => {
+  it('gives the row and its gap to the board', () => {
+    const shown = computeLayout({ width: 375, height: 667 }, stripHeight(7, false));
+    const hidden = computeLayout({ width: 375, height: 667 }, stripHeight(7, true));
+    expect(hidden.board).toBeGreaterThan(shown.board);
+    expect(hidden.contentHeight).toBeLessThanOrEqual(667);
   });
 });

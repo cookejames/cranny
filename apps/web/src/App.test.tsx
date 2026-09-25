@@ -1,7 +1,8 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppRoutes } from './App.tsx';
+import { currentPath, RoomHarness, settle } from './multiplayer/harness.tsx';
 
 /** Exposes the router's current path so tests can assert on redirects. */
 function CurrentPath() {
@@ -84,5 +85,55 @@ describe('routes', () => {
   it('redirects unknown paths to Home', () => {
     renderAt('/nowhere');
     expect(screen.getByTestId('path')).toHaveTextContent(/^\/$/);
+  });
+});
+
+describe('multiplayer routes', () => {
+  it('are absent, with no Home button, in a build without multiplayer', () => {
+    renderAt('/');
+    expect(screen.queryByRole('link', { name: 'Multiplayer' })).not.toBeInTheDocument();
+    cleanup();
+    renderAt('/multiplayer');
+    expect(screen.getByTestId('path')).toHaveTextContent(/^\/$/);
+    cleanup();
+    renderAt('/m/amber-otter-quilt');
+    expect(screen.getByTestId('path')).toHaveTextContent(/^\/$/);
+  });
+
+  describe('with multiplayer', () => {
+    let harness: RoomHarness;
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      harness = new RoomHarness();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('adds the Multiplayer button to Home', () => {
+      harness.renderTab('/');
+      expect(screen.getByRole('link', { name: 'Multiplayer' })).toHaveAttribute(
+        'href',
+        '/multiplayer',
+      );
+    });
+
+    it('redirects a room name typed with capitals, spaces or underscores to the canonical one', async () => {
+      await harness.addPlayer('amber-otter-quilt', 'B'.repeat(22), 'Teal Otter', true);
+      harness.renderTab('/m/Amber_Otter%20Quilt');
+      await settle(500);
+      expect(currentPath()).toBe('/m/amber-otter-quilt');
+      expect(screen.getByRole('heading', { name: 'amber-otter-quilt' })).toBeInTheDocument();
+      await harness.close();
+    });
+
+    it('sends an invalid room name back to the Multiplayer screen', async () => {
+      harness.renderTab('/m/a!');
+      await settle(0);
+      expect(currentPath()).toBe('/multiplayer');
+      expect(screen.getByRole('alert')).toHaveTextContent('Room names are 3–32 letters');
+    });
   });
 });

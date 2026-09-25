@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
-import { computeLayout, type Viewport } from './layout.ts';
+import { computeLayout, type Layout, type Viewport } from './layout.ts';
 import styles from './AppFrame.module.css';
 
 /** The visible viewport size, using `visualViewport` where available (it excludes the keyboard). */
@@ -11,7 +11,7 @@ function readViewport(): Viewport {
 }
 
 /** Tracks the viewport size, updating on resize and orientation change. */
-function useViewport(): Viewport {
+export function useViewport(): Viewport {
   const [viewport, setViewport] = useState(readViewport);
   useEffect(() => {
     const update = () => setViewport(readViewport());
@@ -25,19 +25,22 @@ function useViewport(): Viewport {
   return viewport;
 }
 
+/** A layout as the CSS variables stylesheets read. */
+export const layoutVars = (layout: Layout) =>
+  ({
+    '--column-width': `${layout.columnWidth}px`,
+    '--board-size': `${layout.board}px`,
+    '--tile-size': `${layout.tile}px`,
+  }) as CSSProperties;
+
 /**
  * The app's centred, full-height column. Computes the play-screen layout from the viewport and
  * exposes it to stylesheets as CSS variables (`--column-width`, `--board-size`, `--tile-size`).
  */
 export function AppFrame({ children }: { children: ReactNode }) {
   const layout = computeLayout(useViewport());
-  const vars = {
-    '--column-width': `${layout.columnWidth}px`,
-    '--board-size': `${layout.board}px`,
-    '--tile-size': `${layout.tile}px`,
-  } as CSSProperties;
   return (
-    <div className={styles.frame} style={vars}>
+    <div className={styles.frame} style={layoutVars(layout)}>
       {children}
     </div>
   );

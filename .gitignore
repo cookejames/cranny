@@ -10,3 +10,7 @@ coverage/
 # infra/bootstrap (see infra/backend.hcl.example).
 infra/backend.hcl
 *.tfplan
+# Local secrets, e.g. ABLY_KEY. .env.development is tracked (no secrets).
+.env
+.env.local
+.env.*.local

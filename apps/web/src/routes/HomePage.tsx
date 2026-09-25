@@ -15,15 +15,23 @@ const boardStyle = {
   '--board-size': 'min(300px, 38dvh, var(--column-width) - 40px)',
 } as CSSProperties;
 
+/** Smaller, to leave room for the Multiplayer button on short screens (an iPhone SE). */
+const smallBoardStyle = {
+  '--board-size': 'min(300px, 32dvh, var(--column-width) - 40px)',
+} as CSSProperties;
+
 /**
  * Home screen (specs/2026-09-25-single-player/SPEC.md §5, `design/Home.dc.html`): wordmark, tagline, a solved board, the
- * player's stats once they have solved a grid, and Play. There's no Race card in v1.
+ * player's stats once they have solved a grid, Play, and Multiplayer in builds that have it
+ * (specs/2026-09-25-multiplayer/SPEC.md §9).
  */
-export function HomePage() {
+export function HomePage({ multiplayer = false }: { multiplayer?: boolean }) {
   const [stats] = useState(loadStats);
   const average = averageMs(stats);
   const titleId = useId();
   const blurbId = useId();
+  const multiTitleId = useId();
+  const multiBlurbId = useId();
 
   return (
     <main className={styles.home}>
@@ -32,7 +40,11 @@ export function HomePage() {
         <p className={styles.tagline}>Nine pieces. Seven blocked squares. One grid to fill.</p>
       </header>
 
-      <div className={styles.showcase} style={boardStyle} aria-hidden="true">
+      <div
+        className={styles.showcase}
+        style={multiplayer ? smallBoardStyle : boardStyle}
+        aria-hidden="true"
+      >
         <Board board={SHOWCASE_BOARD} />
       </div>
 
@@ -77,6 +89,33 @@ export function HomePage() {
             <path d="M9 6l6 6-6 6" />
           </svg>
         </Link>
+
+        {multiplayer && (
+          <Link
+            to="/multiplayer"
+            className={styles.multiplayer}
+            aria-labelledby={multiTitleId}
+            aria-describedby={multiBlurbId}
+          >
+            <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="9" cy="8" r="3.5" />
+              <path d="M2.5 20c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5" />
+              <path d="M16 4.7a3.5 3.5 0 0 1 0 6.6" />
+              <path d="M18 13.8c2.1.8 3.5 3 3.5 5.7" />
+            </svg>
+            <span className={styles.playText}>
+              <span id={multiTitleId} className={styles.playTitle}>
+                Multiplayer
+              </span>
+              <span id={multiBlurbId} className={styles.multiplayerBlurb}>
+                Play with friends in a room
+              </span>
+            </span>
+            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9 6l6 6-6 6" />
+            </svg>
+          </Link>
+        )}
       </div>
     </main>
   );

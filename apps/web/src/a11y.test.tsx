@@ -2,8 +2,9 @@ import { newBoard } from '@cranny/engine';
 import { fireEvent, render, screen } from '@testing-library/react';
 import axe from 'axe-core';
 import { MemoryRouter } from 'react-router';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppRoutes } from './App.tsx';
+import { RoomHarness, settle } from './multiplayer/harness.tsx';
 import { Results } from './play/Results.tsx';
 import { saveStats } from './storage/storage.ts';
 
@@ -90,5 +91,89 @@ describe('accessibility', () => {
   it('the invalid-link screen', async () => {
     renderAt('/g/nope');
     expect(await violations()).toEqual([]);
+  });
+
+  describe('multiplayer', () => {
+    let harness: RoomHarness;
+    const TEAL = 'B'.repeat(22);
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      harness = new RoomHarness();
+    });
+
+    afterEach(async () => {
+      await harness.close();
+      vi.useRealTimers();
+    });
+
+    /** axe with real timers: it waits on its own timeouts. */
+    const check = async () => {
+      vi.useRealTimers();
+      const found = await violations();
+      vi.useFakeTimers();
+      return found;
+    };
+
+    it('the Multiplayer screen, with a join error', async () => {
+      harness.renderTab('/multiplayer');
+      await settle();
+      fireEvent.change(screen.getByLabelText('Join a room'), { target: { value: 'nobody-here' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Join' }));
+      await settle(100);
+      expect(await check()).toEqual([]);
+    });
+
+    it('the lobby, with the ready countdown', async () => {
+      const room = await harness.createRoom();
+      const teal = await harness.addPlayer(room, TEAL, 'Teal Otter');
+      await harness.addPlayer(room, 'C'.repeat(22), 'Rose Lynx');
+      fireEvent.click(screen.getByRole('button', { name: 'Ready' }));
+      teal.setReady(true);
+      await settle(200);
+      expect(await check()).toEqual([]);
+    });
+
+    it('the leave confirmation', async () => {
+      await harness.createRoom();
+      fireEvent.click(screen.getByRole('button', { name: 'Leave the room' }));
+      expect(await check()).toEqual([]);
+    });
+
+    it('playing, with the progress strip and the close-out', async () => {
+      const room = await harness.createRoom();
+      const teal = await harness.addPlayer(room, TEAL, 'Teal Otter');
+      const rose = await harness.addPlayer(room, 'C'.repeat(22), 'Rose Lynx');
+      await harness.startRound([teal, rose]);
+      rose.reportProgress(1, 3);
+      teal.reportFinished(1, 30_000);
+      await settle(200);
+      expect(await check()).toEqual([]);
+    });
+
+    it('sitting out a round', async () => {
+      const room = await harness.createRoom();
+      const teal = await harness.addPlayer(room, TEAL, 'Teal Otter');
+      const rose = await harness.addPlayer(room, 'C'.repeat(22), 'Rose Lynx');
+      fireEvent.click(screen.getByRole('button', { name: 'Ready' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Ready' }));
+      teal.setReady(true);
+      rose.setReady(true);
+      await settle(200);
+      await settle(30_000);
+      expect(screen.getByText('You’ll play from the next round')).toBeInTheDocument();
+      expect(await check()).toEqual([]);
+    });
+
+    it('the results and totals', async () => {
+      const room = await harness.createRoom();
+      const teal = await harness.addPlayer(room, TEAL, 'Teal Otter');
+      await harness.startRound([teal]);
+      teal.reportFinished(1, 30_000);
+      await settle(200);
+      await settle(60_000);
+      expect(screen.getByRole('table')).toBeInTheDocument();
+      expect(await check()).toEqual([]);
+    });
   });
 });

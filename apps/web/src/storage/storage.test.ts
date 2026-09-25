@@ -1,13 +1,28 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   EMPTY_STATS,
+  MULTIPLAYER_PREFS_KEY,
+  MULTIPLAYER_ROUND_KEY,
+  PLAYER_KEY,
   ROUND_KEY,
+  SEAT_KEY,
   STATS_KEY,
+  clearMultiplayerRound,
   clearRound,
+  clearSeat,
+  loadMultiplayerPrefs,
+  loadMultiplayerRound,
+  loadPlayerName,
   loadRound,
+  loadSeat,
   loadStats,
+  saveMultiplayerPrefs,
+  saveMultiplayerRound,
+  savePlayerName,
   saveRound,
+  saveSeat,
   saveStats,
+  type SavedMultiplayerRound,
   type SavedRound,
 } from './storage.ts';
 
@@ -92,6 +107,99 @@ describe('round in progress', () => {
   });
 });
 
+describe('player name', () => {
+  it('round-trips in local storage', () => {
+    expect(loadPlayerName()).toBeNull();
+    expect(savePlayerName('Teal Otter')).toBe(true);
+    expect(loadPlayerName()).toBe('Teal Otter');
+    expect(localStorage.getItem(PLAYER_KEY)).not.toBeNull();
+  });
+
+  it('ignores a stored name that isn’t clean', () => {
+    localStorage.setItem(PLAYER_KEY, JSON.stringify({ name: '  Teal\u0007 Otter ' }));
+    expect(loadPlayerName()).toBeNull();
+    localStorage.setItem(PLAYER_KEY, JSON.stringify({ name: 'x'.repeat(17) }));
+    expect(loadPlayerName()).toBeNull();
+  });
+});
+
+describe('seat', () => {
+  const seat = { room: 'amber-otter-quilt', playerId: 'A'.repeat(22) };
+
+  it('round-trips in session storage, not local storage, and can be cleared', () => {
+    expect(saveSeat(seat)).toBe(true);
+    expect(loadSeat()).toEqual(seat);
+    expect(sessionStorage.getItem(SEAT_KEY)).not.toBeNull();
+    expect(localStorage.getItem(SEAT_KEY)).toBeNull();
+    clearSeat();
+    expect(loadSeat()).toBeNull();
+  });
+
+  it('rejects a seat with a bad room name or player id', () => {
+    sessionStorage.setItem(SEAT_KEY, JSON.stringify({ ...seat, room: 'Not A Room' }));
+    expect(loadSeat()).toBeNull();
+    sessionStorage.setItem(SEAT_KEY, JSON.stringify({ ...seat, playerId: 'short' }));
+    expect(loadSeat()).toBeNull();
+  });
+});
+
+describe('multiplayer round', () => {
+  const saved: SavedMultiplayerRound = {
+    room: 'amber-otter-quilt',
+    round: 3,
+    version: 1,
+    seed: 42,
+    revealedAt: 1_760_000_000_000,
+    orientations: { L4: { rot: 3, flip: true } },
+    placements: { D2: { origin: 0, orientation: { rot: 0, flip: false } } },
+    finishedMs: null,
+  };
+
+  it('round-trips in session storage, separately from the solo round, and can be cleared', () => {
+    saveRound(round);
+    expect(saveMultiplayerRound(saved)).toBe(true);
+    expect(loadMultiplayerRound()).toEqual(saved);
+    expect(saveMultiplayerRound({ ...saved, finishedMs: 61_200 })).toBe(true);
+    expect(loadMultiplayerRound()?.finishedMs).toBe(61_200);
+    expect(loadRound()).toEqual(round);
+    expect(localStorage.getItem(MULTIPLAYER_ROUND_KEY)).toBeNull();
+    clearMultiplayerRound();
+    expect(loadMultiplayerRound()).toBeNull();
+  });
+
+  it('rejects a board whose room, round, grid or times don’t validate', () => {
+    for (const bad of [
+      { room: 'NOPE' },
+      { round: -1 },
+      { version: 1.5 },
+      { seed: 'x' },
+      { revealedAt: null },
+      { finishedMs: -1 },
+    ]) {
+      sessionStorage.setItem(MULTIPLAYER_ROUND_KEY, JSON.stringify({ ...saved, ...bad }));
+      expect(loadMultiplayerRound()).toBeNull();
+    }
+  });
+
+  it('drops malformed placements but keeps the rest', () => {
+    sessionStorage.setItem(
+      MULTIPLAYER_ROUND_KEY,
+      JSON.stringify({ ...saved, placements: { ...saved.placements, XX: 3 } }),
+    );
+    expect(loadMultiplayerRound()?.placements).toEqual(saved.placements);
+  });
+});
+
+describe('multiplayer preferences', () => {
+  it('shows progress by default and remembers hiding it', () => {
+    expect(loadMultiplayerPrefs()).toEqual({ hideProgress: false });
+    saveMultiplayerPrefs({ hideProgress: true });
+    expect(loadMultiplayerPrefs()).toEqual({ hideProgress: true });
+    localStorage.setItem(MULTIPLAYER_PREFS_KEY, JSON.stringify({ hideProgress: 'yes' }));
+    expect(loadMultiplayerPrefs()).toEqual({ hideProgress: false });
+  });
+});
+
 describe('when storage is unavailable', () => {
   it('reads defaults and reports failed writes without throwing', () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
@@ -116,5 +224,14 @@ describe('when storage is unavailable', () => {
     });
     expect(loadStats()).toEqual(EMPTY_STATS);
     expect(saveRound(round)).toBe(false);
+  });
+
+  it('copes with sessionStorage itself throwing on access', () => {
+    vi.spyOn(globalThis, 'sessionStorage', 'get').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+    expect(loadSeat()).toBeNull();
+    expect(saveSeat({ room: 'amber-otter-quilt', playerId: 'A'.repeat(22) })).toBe(false);
+    expect(() => clearMultiplayerRound()).not.toThrow();
   });
 });

@@ -2,3 +2,7 @@ pnpm-lock.yaml
 design/
 dist/
 coverage/
+
+# Vendored agent skills (npx skills add), kept as published.
+.claude/
+skills-lock.json

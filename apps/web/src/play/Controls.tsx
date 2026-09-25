@@ -12,12 +12,15 @@ type ControlsProps = {
   onRotate: () => void;
   onFlip: () => void;
   onClear: () => void;
-  onNewGrid: () => void;
+  /** Disables every button, e.g. once a multiplayer round has ended. */
+  disabled?: boolean;
+  /** Without it there is no New grid button, as in multiplayer. */
+  onNewGrid?: (() => void) | undefined;
 };
 
 /**
- * The play screen's four buttons (specs/2026-09-25-single-player/SPEC.md §5): Rotate and Flip act on the selected tray piece,
- * Clear returns placed pieces to the tray, and New grid skips to another grid. Once any piece is
+ * The play screen's buttons (specs/2026-09-25-single-player/SPEC.md §5): Rotate and Flip act on the selected tray piece,
+ * Clear returns placed pieces to the tray, and New grid (solo only) skips to another grid. Once any piece is
  * placed, New grid needs a second tap within {@link SKIP_CONFIRM_MS} to avoid accidental skips.
  */
 export function Controls({
@@ -27,6 +30,7 @@ export function Controls({
   onFlip,
   onClear,
   onNewGrid,
+  disabled = false,
 }: ControlsProps) {
   const [confirming, setConfirming] = useState(false);
 
@@ -41,20 +45,30 @@ export function Controls({
 
   /** Skips to a new grid, or asks for a second tap first if any piece is placed. */
   const newGrid = () => {
-    if (placedCount === 0 || askingToSkip) onNewGrid();
+    if (placedCount === 0 || askingToSkip) onNewGrid?.();
     else setConfirming(true);
   };
 
   return (
-    <div className={styles.controls}>
-      <button type="button" className={styles.primary} onClick={onRotate} disabled={!hasSelection}>
+    <div className={styles.controls} data-buttons={onNewGrid ? 4 : 3}>
+      <button
+        type="button"
+        className={styles.primary}
+        onClick={onRotate}
+        disabled={disabled || !hasSelection}
+      >
         <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M20 12a8 8 0 1 1-2.6-5.9" />
           <path d="M20 4v5h-5" />
         </svg>
         Rotate
       </button>
-      <button type="button" className={styles.primary} onClick={onFlip} disabled={!hasSelection}>
+      <button
+        type="button"
+        className={styles.primary}
+        onClick={onFlip}
+        disabled={disabled || !hasSelection}
+      >
         <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M12 3v18" />
           <path d="M8 7l-5 5 5 5" />
@@ -66,17 +80,19 @@ export function Controls({
         type="button"
         className={styles.secondary}
         onClick={onClear}
-        disabled={placedCount === 0}
+        disabled={disabled || placedCount === 0}
       >
         Clear
       </button>
-      <button
-        type="button"
-        className={askingToSkip ? styles.confirm : styles.secondary}
-        onClick={newGrid}
-      >
-        {askingToSkip ? 'Tap again to skip' : 'New grid'}
-      </button>
+      {onNewGrid && (
+        <button
+          type="button"
+          className={askingToSkip ? styles.confirm : styles.secondary}
+          onClick={newGrid}
+        >
+          {askingToSkip ? 'Tap again to skip' : 'New grid'}
+        </button>
+      )}
       {/* A separate live region: announcements from a focused button's own text are unreliable. */}
       <span role="status" className="visually-hidden">
         {askingToSkip ? 'Tap New grid again within 3 seconds to skip this grid.' : ''}

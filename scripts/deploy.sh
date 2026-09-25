@@ -1,15 +1,13 @@
 #!/usr/bin/env bash
-# Builds the web app and publishes it to the site bucket behind CloudFront (SPEC.md §11).
+# Builds the web app and the rooms API, deploys the API's Lambda, then publishes the app to the
+# site bucket behind CloudFront (SPEC.md §11, multiplayer SPEC §13).
 # Needs: pnpm, terraform (with infra/ already applied) and AWS credentials for the account.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-# Deploy exactly what's committed: no stray local edits.
-if [[ -n $(git status --porcelain) ]]; then
-  echo "Uncommitted changes; commit or stash them first." >&2
-  exit 1
-fi
+# Print AWS CLI output straight to the terminal rather than through a pager that waits for q.
+export AWS_PAGER=""
 
 # Show who is deploying, and refuse the root user unless CRANNY_ALLOW_ROOT=1.
 IDENTITY=$(aws sts get-caller-identity --query Arn --output text)
@@ -25,6 +23,7 @@ fi
 
 BUCKET=$(terraform -chdir=infra output -raw bucket_name)
 DISTRIBUTION=$(terraform -chdir=infra output -raw distribution_id)
+ROOMS_FUNCTION=$(terraform -chdir=infra output -raw rooms_function_name)
 
 echo "Installing, checking and building $(git rev-parse --short HEAD)…"
 pnpm install --frozen-lockfile
@@ -32,6 +31,14 @@ pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
+
+# The rooms API first, so the app never calls a Lambda older than itself.
+echo "Deploying the rooms API to ${ROOMS_FUNCTION}…"
+ROOMS_ZIP=$(mktemp -d)/rooms-api.zip
+(cd apps/rooms-api/dist && zip -q -X "$ROOMS_ZIP" handler.mjs handler.mjs.map)
+aws lambda update-function-code --function-name "$ROOMS_FUNCTION" \
+  --zip-file "fileb://$ROOMS_ZIP" --query "CodeSha256" --output text
+aws lambda wait function-updated-v2 --function-name "$ROOMS_FUNCTION"
 
 DIST=apps/web/dist
 
