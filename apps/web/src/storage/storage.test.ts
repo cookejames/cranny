@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   EMPTY_STATS,
-  LOCAL_ROOMS_KEY,
   MULTIPLAYER_PREFS_KEY,
   MULTIPLAYER_ROUND_KEY,
   PLAYER_KEY,
@@ -11,14 +10,12 @@ import {
   clearMultiplayerRound,
   clearRound,
   clearSeat,
-  loadLocalRooms,
   loadMultiplayerPrefs,
   loadMultiplayerRound,
   loadPlayerName,
   loadRound,
   loadSeat,
   loadStats,
-  saveLocalRooms,
   saveMultiplayerPrefs,
   saveMultiplayerRound,
   savePlayerName,
@@ -107,48 +104,6 @@ describe('round in progress', () => {
       orientations: { L4: { rot: 3, flip: true } },
     });
     expect(Object.keys(loadRound()!.placements)).toEqual(['D2']);
-  });
-});
-
-describe('local rooms', () => {
-  it('is empty when nothing is stored', () => {
-    expect(loadLocalRooms()).toEqual({ leases: {}, keys: {} });
-  });
-
-  it('round-trips', () => {
-    const rooms = {
-      leases: { 'otter-bramble': { channel: 'local-x', expiresAt: 5 } },
-      keys: { 'local-x': { roomKey: 'k', keepUntil: 9 } },
-    };
-    expect(saveLocalRooms(rooms)).toBe(true);
-    expect(loadLocalRooms()).toEqual(rooms);
-  });
-
-  it('drops entries that don’t validate and keeps the rest', () => {
-    localStorage.setItem(
-      LOCAL_ROOMS_KEY,
-      JSON.stringify({
-        leases: {
-          'good-name': { channel: 'local-x', expiresAt: 5 },
-          'Bad Name!': { channel: 'local-y', expiresAt: 5 },
-          'no-time': { channel: 'local-z' },
-          'wrong-type': 'local-w',
-        },
-        keys: {
-          'local-x': { roomKey: 'k', keepUntil: 9 },
-          'local-y': { roomKey: 3, keepUntil: 9 },
-        },
-      }),
-    );
-    expect(loadLocalRooms()).toEqual({
-      leases: { 'good-name': { channel: 'local-x', expiresAt: 5 } },
-      keys: { 'local-x': { roomKey: 'k', keepUntil: 9 } },
-    });
-  });
-
-  it('is empty when the stored value is not an object', () => {
-    localStorage.setItem(LOCAL_ROOMS_KEY, '[1,2]');
-    expect(loadLocalRooms()).toEqual({ leases: {}, keys: {} });
   });
 });
 

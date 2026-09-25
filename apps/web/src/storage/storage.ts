@@ -164,67 +164,10 @@ export function clearRound(): void {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Local multiplayer rooms (development only)
-
-/** The rooms `LocalDirectory` has handed out, shared by every tab (specs/2026-09-25-multiplayer/SPEC.md §7). */
-export const LOCAL_ROOMS_KEY = 'cranny.localRooms.v1';
-
-/**
- * `LocalDirectory`'s state. `leases` maps a room name to its channel and when the name is free
- * again; `keys` maps a channel to its room key, kept past the lease so a host can re-claim a
- * lapsed name (`keepUntil` is when the entry may be pruned). Times are `Date.now()` values.
- */
-export type LocalRooms = {
-  leases: Record<string, { channel: string; expiresAt: number }>;
-  keys: Record<string, { roomKey: string; keepUntil: number }>;
-};
+// Multiplayer (specs/2026-09-25-multiplayer/SPEC.md §10)
 
 const isTime = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value);
-
-/** Keeps the entries of a stored record whose key passes `isKey` and whose value parses. */
-function validEntries<T>(
-  value: unknown,
-  isKey: (key: string) => boolean,
-  parse: (entry: Record<string, unknown>) => T | null,
-): Record<string, T> {
-  const out: Record<string, T> = {};
-  if (!isRecord(value)) return out;
-  for (const [key, entry] of Object.entries(value)) {
-    const parsed = isKey(key) && isRecord(entry) ? parse(entry) : null;
-    if (parsed) out[key] = parsed;
-  }
-  return out;
-}
-
-/** The stored local rooms, dropping any entry that doesn't validate. Empty if there are none. */
-export function loadLocalRooms(): LocalRooms {
-  const raw = readJson(LOCAL_ROOMS_KEY);
-  const value = isRecord(raw) ? raw : {};
-  return {
-    leases: validEntries(value.leases, isValidRoomName, (e) =>
-      typeof e.channel === 'string' && isTime(e.expiresAt)
-        ? { channel: e.channel, expiresAt: e.expiresAt }
-        : null,
-    ),
-    keys: validEntries(
-      value.keys,
-      () => true,
-      (e) =>
-        typeof e.roomKey === 'string' && isTime(e.keepUntil)
-          ? { roomKey: e.roomKey, keepUntil: e.keepUntil }
-          : null,
-    ),
-  };
-}
-
-/** Saves the local rooms. Returns false if they couldn't be stored. */
-export function saveLocalRooms(rooms: LocalRooms): boolean {
-  return writeJson(LOCAL_ROOMS_KEY, rooms);
-}
-
-// ---------------------------------------------------------------------------------------------
-// Multiplayer (specs/2026-09-25-multiplayer/SPEC.md §10)
 
 /** The player's name, offered by default next time (local storage, shared by tabs). */
 export const PLAYER_KEY = 'cranny.player.v1';

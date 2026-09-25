@@ -27,6 +27,8 @@ export const SILENCE_MS = 25_000;
 export const SWEEP_MS = 1_000;
 /** How long `connect` waits for the members already there to answer its join. */
 export const JOIN_WAIT_MS = 200;
+/** How long {@link LocalTransport.occupied} waits for members to answer its probe. */
+export const PROBE_WAIT_MS = JOIN_WAIT_MS;
 
 /** A named broadcast bus: what LocalTransport needs from `BroadcastChannel`. */
 export type Bus = {
@@ -51,11 +53,16 @@ export type LocalTransportOptions = {
   silenceMs?: number;
   sweepMs?: number;
   joinWaitMs?: number;
+  probeWaitMs?: number;
 };
 
-/** What travels on the bus. `conn` tells a player's connections apart (e.g. two tabs). */
+/**
+ * What travels on the bus. `conn` tells a player's connections apart (e.g. two tabs). A `probe`
+ * comes from a directory asking whether anyone is here, not from a member: members answer it with
+ * a `beat` but don't count it as present.
+ */
 type Frame =
-  | { t: 'join' | 'beat' | 'bye'; conn: string; from: PlayerId }
+  | { t: 'join' | 'beat' | 'bye' | 'probe'; conn: string; from: PlayerId }
   | { t: 'msg'; conn: string; from: PlayerId; payload: unknown };
 
 /** A frame read off the bus, or null if it isn't one (another build's tab, say). */
@@ -64,7 +71,7 @@ function parseFrame(data: unknown): Frame | null {
   const f = data as Record<string, unknown>;
   if (typeof f.conn !== 'string' || !isPlayerId(f.from)) return null;
   if (f.t === 'msg') return { t: 'msg', conn: f.conn, from: f.from, payload: f.payload };
-  if (f.t === 'join' || f.t === 'beat' || f.t === 'bye') {
+  if (f.t === 'join' || f.t === 'beat' || f.t === 'bye' || f.t === 'probe') {
     return { t: f.t, conn: f.conn, from: f.from };
   }
   return null;
@@ -97,6 +104,7 @@ export class LocalTransport implements RoomTransport {
   readonly sweepMs: number;
   private readonly openBus: (name: string) => Bus;
   private readonly joinWaitMs: number;
+  private readonly probeWaitMs: number;
   private readonly open = new Set<LocalConnection>();
 
   /** @param options - Test seams and timings; the defaults are for the browser. */
@@ -107,6 +115,7 @@ export class LocalTransport implements RoomTransport {
     this.silenceMs = options.silenceMs ?? SILENCE_MS;
     this.sweepMs = options.sweepMs ?? SWEEP_MS;
     this.joinWaitMs = options.joinWaitMs ?? JOIN_WAIT_MS;
+    this.probeWaitMs = options.probeWaitMs ?? PROBE_WAIT_MS;
     const lifecycle = options.lifecycle === undefined ? defaultLifecycle() : options.lifecycle;
     // A closing tab says goodbye so the others see it go at once rather than after SILENCE_MS. A
     // page restored from the back/forward cache announces itself again.
@@ -139,6 +148,25 @@ export class LocalTransport implements RoomTransport {
     connection.announce();
     await new Promise<void>((resolve) => this.clock.setTimeout(resolve, this.joinWaitMs));
     return connection;
+  }
+
+  /**
+   * Whether any tab is connected to `channel`, for the local directory: posts a probe and
+   * waits {@link PROBE_WAIT_MS} for an answer, without joining, so the prober never shows up in
+   * anyone's presence.
+   */
+  async occupied(channel: string): Promise<boolean> {
+    const bus = this.openBus(`cranny-room:${channel}`);
+    let answered = false;
+    bus.listen((data) => {
+      const frame = parseFrame(data);
+      if (frame && frame.t !== 'bye' && frame.t !== 'probe') answered = true;
+    });
+    const id = randomPlayerId(cryptoRandom);
+    bus.post({ t: 'probe', conn: id, from: id });
+    await new Promise<void>((resolve) => this.clock.setTimeout(resolve, this.probeWaitMs));
+    bus.close();
+    return answered;
   }
 }
 
@@ -270,6 +298,10 @@ export class LocalConnection implements RoomConnection {
     if (this.state !== 'connected') return;
     const frame = parseFrame(data);
     if (!frame || frame.conn === this.id) return;
+    if (frame.t === 'probe') {
+      this.post({ t: 'beat', conn: this.id, from: this.self });
+      return;
+    }
     if (frame.t === 'bye') {
       this.members.delete(frame.conn);
     } else {

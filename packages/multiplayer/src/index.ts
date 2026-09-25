@@ -16,11 +16,13 @@ export {
 export { systemClock, type Clock, type TimerHandle } from './clock.ts';
 export {
   isDirectoryError,
-  KEEP_ALIVE_INTERVAL_MS,
-  LEASE_MS,
+  roomChannel,
+  StatelessDirectory,
   type CreateError,
+  type DirectoryBackend,
   type JoinError,
   type RefreshError,
+  type RejoinError,
   type RoomCredential,
   type RoomDirectory,
   type RoomTicket,

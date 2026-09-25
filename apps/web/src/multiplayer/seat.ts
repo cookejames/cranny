@@ -46,8 +46,11 @@ export function tryLock(name: string, locks: SeatLocks | null): Promise<Release 
   });
 }
 
-/** A seat this tab holds for one room. */
-export type SeatClaim = { room: string; self: PlayerId; release: Release };
+/**
+ * A seat this tab holds for one room. `returning` means it is the tab's saved seat, as after a
+ * reload, rather than a new one.
+ */
+export type SeatClaim = { room: string; self: PlayerId; returning: boolean; release: Release };
 
 export type ClaimOptions = {
   locks?: SeatLocks | null | undefined;
@@ -65,14 +68,14 @@ export async function claimSeat(room: string, options: ClaimOptions = {}): Promi
   const saved = loadSeat();
   if (saved?.room === room) {
     const release = await tryLock(seatLockName(saved.playerId), locks);
-    if (release) return { room, self: saved.playerId, release };
+    if (release) return { room, self: saved.playerId, returning: true, release };
   }
   // A new seat. With 128 random bits its lock can't be held elsewhere, but take it all the same.
   const self = randomPlayerId(options.random ?? cryptoRandom);
   clearMultiplayerRound();
   saveSeat({ room, playerId: self });
   const release = (await tryLock(seatLockName(self), locks)) ?? (() => {});
-  return { room, self, release };
+  return { room, self, returning: false, release };
 }
 
 /**

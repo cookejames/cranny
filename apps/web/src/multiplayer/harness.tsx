@@ -39,7 +39,9 @@ export const uiId = () => loadSeat()!.playerId;
 /** A fake network and directory, the tabs rendered on them, and the test's own players. */
 export class RoomHarness {
   readonly transport = new FakeTransport();
-  readonly directory = new FakeDirectory();
+  readonly directory = new FakeDirectory({
+    occupied: (channel) => this.transport.presenceOf(channel).length > 0,
+  });
   readonly others: RoomClient[] = [];
 
   /**
@@ -73,14 +75,7 @@ export class RoomHarness {
       ? await this.directory.create(room, self)
       : await this.directory.join(room, self);
     if (isDirectoryError(ticket)) throw new Error(ticket.error);
-    const client = new RoomClient({
-      transport: this.transport,
-      directory: this.directory,
-      ticket,
-      self,
-      name,
-      created,
-    });
+    const client = new RoomClient({ transport: this.transport, ticket, self, name });
     this.others.push(client);
     const starting = client.start();
     await settle(200);

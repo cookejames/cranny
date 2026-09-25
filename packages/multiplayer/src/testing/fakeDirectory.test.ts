@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { isDirectoryError, LEASE_MS, type RoomTicket } from '../directory.ts';
+import { isDirectoryError, roomChannel } from '../directory.ts';
 import { FakeDirectory, type FakeCredentialValue } from './fakeDirectory.ts';
-import { seededRandom } from './random.ts';
 
-/** A directory on a clock the test moves by hand. */
+/** A directory on a clock the test moves by hand, with presence the test sets. */
 function setup() {
   const clock = { t: 0, now: () => clock.t };
+  const present = new Set<string>();
   const directory = new FakeDirectory({
     clock,
-    random: seededRandom(5),
     credentialTtlMs: 60 * 60_000,
+    occupied: (channel) => present.has(channel),
   });
-  return { clock, directory };
+  return { clock, present, directory };
 }
 
 /** Unwraps a successful directory result. */
@@ -21,79 +21,55 @@ function ok<T extends object>(result: T): Exclude<T, { error: string }> {
 }
 
 describe('FakeDirectory', () => {
-  it('creates a room on a random channel and lets others join it', async () => {
-    const { directory } = setup();
+  it('names the channel after the room, and gives each player their own credential', async () => {
+    const { directory, present } = setup();
     const created = ok(await directory.create('pizza', 'host'));
+    expect(created.channel).toBe(roomChannel('pizza'));
+    present.add(created.channel);
     const joined = ok(await directory.join('pizza', 'guest'));
     expect(joined.channel).toBe(created.channel);
-    expect(joined.roomKey).toBe(created.roomKey);
-    expect(created.channel).not.toContain('pizza');
     expect((joined.credential.value as FakeCredentialValue).self).toBe('guest');
   });
 
-  it('refuses a name that is in use, missing or not canonical', async () => {
-    const { directory } = setup();
-    await directory.create('pizza', 'a');
+  it('refuses to create an occupied room or join an empty one', async () => {
+    const { directory, present } = setup();
+    present.add(roomChannel('pizza'));
     expect(await directory.create('pizza', 'b')).toEqual({ error: 'taken' });
     expect(await directory.join('pasta', 'b')).toEqual({ error: 'not-found' });
-    expect(await directory.create('Pizza Party', 'b')).toEqual({ error: 'invalid' });
-    expect(await directory.join('no', 'b')).toEqual({ error: 'invalid' });
   });
 
-  it('reports unavailable for every call while down', async () => {
+  it('frees a name as soon as its room is empty', async () => {
+    const { directory, present } = setup();
+    present.add(roomChannel('pizza'));
+    present.clear();
+    expect(isDirectoryError(await directory.create('pizza', 'c'))).toBe(false);
+  });
+
+  it('rejoins whether or not anyone is there', async () => {
+    const { directory, present } = setup();
+    expect(ok(await directory.rejoin('pizza', 'a')).channel).toBe(roomChannel('pizza'));
+    present.add(roomChannel('pizza'));
+    expect(ok(await directory.rejoin('pizza', 'a')).channel).toBe(roomChannel('pizza'));
+  });
+
+  it('rejects invalid names', async () => {
+    const { directory } = setup();
+    expect(await directory.create('Pizza Party', 'b')).toEqual({ error: 'invalid' });
+    expect(await directory.join('no', 'b')).toEqual({ error: 'invalid' });
+    expect(await directory.rejoin('no', 'b')).toEqual({ error: 'invalid' });
+  });
+
+  it('reports unavailable while switched off', async () => {
     const { directory } = setup();
     const ticket = ok(await directory.create('pizza', 'a'));
     directory.available = false;
     expect(await directory.create('pasta', 'a')).toEqual({ error: 'unavailable' });
     expect(await directory.join('pizza', 'a')).toEqual({ error: 'unavailable' });
-    expect(await directory.keepAlive(ticket)).toBe('unavailable');
+    expect(await directory.rejoin('pizza', 'a')).toEqual({ error: 'unavailable' });
     expect(await directory.refreshCredential(ticket, 'a')).toEqual({ error: 'unavailable' });
   });
 
-  it('frees a name once its lease runs out', async () => {
-    const { clock, directory } = setup();
-    const first = ok(await directory.create('pizza', 'a'));
-    clock.t = LEASE_MS - 1;
-    expect(await directory.join('pizza', 'b')).toMatchObject({ channel: first.channel });
-    clock.t = LEASE_MS;
-    expect(await directory.join('pizza', 'b')).toEqual({ error: 'not-found' });
-    const second = ok(await directory.create('pizza', 'c'));
-    expect(second.channel).not.toBe(first.channel);
-  });
-
-  it('extends the lease on keepAlive', async () => {
-    const { clock, directory } = setup();
-    const ticket = ok(await directory.create('pizza', 'a'));
-    clock.t = 4 * 60_000;
-    expect(await directory.keepAlive(ticket)).toBe('ok');
-    expect(directory.leaseExpiresAt('pizza')).toBe(4 * 60_000 + LEASE_MS);
-  });
-
-  it('re-claims a lapsed name for the same channel if nobody took it', async () => {
-    const { clock, directory } = setup();
-    const ticket = ok(await directory.create('pizza', 'a'));
-    clock.t = LEASE_MS + 60_000;
-    expect(await directory.keepAlive(ticket)).toBe('ok');
-    expect(ok(await directory.join('pizza', 'b')).channel).toBe(ticket.channel);
-  });
-
-  it('reports lost if another room took the name', async () => {
-    const { clock, directory } = setup();
-    const ticket = ok(await directory.create('pizza', 'a'));
-    clock.t = LEASE_MS;
-    ok(await directory.create('pizza', 'z'));
-    expect(await directory.keepAlive(ticket)).toBe('lost');
-  });
-
-  it('rejects keepAlive and refreshCredential without the room key', async () => {
-    const { directory } = setup();
-    const ticket = ok(await directory.create('pizza', 'a'));
-    const forged: RoomTicket = { ...ticket, roomKey: 'guess' };
-    expect(await directory.keepAlive(forged)).toBe('lost');
-    expect(await directory.refreshCredential(forged, 'a')).toEqual({ error: 'not-found' });
-  });
-
-  it('refreshes a credential without touching the lease', async () => {
+  it('refreshes a credential for the same channel and player', async () => {
     const { clock, directory } = setup();
     const ticket = ok(await directory.create('pizza', 'a'));
     clock.t = 58 * 60_000;
@@ -104,6 +80,5 @@ describe('FakeDirectory', () => {
       self: 'a',
       expiresAt: 118 * 60_000,
     });
-    expect(directory.leaseExpiresAt('pizza')).toBeNull();
   });
 });

@@ -1,5 +1,5 @@
 import { systemClock, type Clock, type TimerHandle } from './clock.ts';
-import { KEEP_ALIVE_INTERVAL_MS, type RoomDirectory, type RoomTicket } from './directory.ts';
+import type { RoomTicket } from './directory.ts';
 import { cleanPlayerName } from './names.ts';
 import {
   decodeMessage,
@@ -57,21 +57,16 @@ export type RoomView = {
   present: PlayerId[];
   /** No seat yet, `HELLO_RETRY_MS` after the first `hello` ("Still connecting…"). */
   stillConnecting: boolean;
-  /** The directory gave the room's name to another room (SPEC §7 Lost name). */
-  nameLost: boolean;
   /** When the connection dropped, on the local clock; null while connected. */
   reconnectingSince: number | null;
 };
 
 export type RoomClientOptions = {
   transport: RoomTransport;
-  directory: RoomDirectory;
   ticket: RoomTicket;
   self: PlayerId;
   /** The player's name; cleaned before it's sent. */
   name: string;
-  /** Whether this client just created the room, and so starts as host (SPEC §8.1). */
-  created: boolean;
   clock?: Clock;
   random?: RandomSource;
 };
@@ -81,7 +76,7 @@ type Reported = { round: number; placed: number; finishedMs: number | null };
 
 /**
  * One player's side of a room (SPEC §5, §8): connects, keeps the latest snapshot, sends intents,
- * and while host runs the room reducer, its deadlines and the directory keep-alive. Handles host
+ * and while host runs the room reducer and its deadlines. Handles host
  * handover, two hosts at once, reconnecting, and resending intents a snapshot shows were lost.
  * Framework-free: the UI subscribes to {@link RoomView}s.
  */
@@ -89,10 +84,8 @@ export class RoomClient {
   readonly self: PlayerId;
   readonly ticket: RoomTicket;
   private readonly transport: RoomTransport;
-  private readonly directory: RoomDirectory;
   private readonly clock: Clock;
   private readonly random: RandomSource;
-  private readonly created: boolean;
   private name: string;
 
   private connection: RoomConnection | null = null;
@@ -112,17 +105,14 @@ export class RoomClient {
   private tickTimer: TimerHandle | null = null;
   private helloTimer: TimerHandle | null = null;
   private fallbackTimer: TimerHandle | null = null;
-  private keepAliveTimer: TimerHandle | null = null;
   private resendTimer: TimerHandle | null = null;
 
-  /** @param options - The transport, directory, ticket and player; see {@link RoomClientOptions}. */
+  /** @param options - The transport, ticket and player; see {@link RoomClientOptions}. */
   constructor(options: RoomClientOptions) {
     this.transport = options.transport;
-    this.directory = options.directory;
     this.ticket = options.ticket;
     this.self = options.self;
     this.name = cleanPlayerName(options.name) ?? 'Player';
-    this.created = options.created;
     this.clock = options.clock ?? systemClock;
     this.random = options.random ?? cryptoRandom;
     this.current = {
@@ -132,7 +122,6 @@ export class RoomClient {
       room: null,
       present: [],
       stillConnecting: false,
-      nameLost: false,
       reconnectingSince: null,
     };
   }
@@ -149,9 +138,11 @@ export class RoomClient {
   }
 
   /**
-   * Connects and joins: as host if this client created the room or nobody else is there,
-   * otherwise by sending `hello` until a snapshot gives it a seat (SPEC §8.1). The phase becomes
-   * `closed` if the transport can't connect.
+   * Connects and joins: as host if nobody else is there, however the ticket was made, otherwise
+   * by sending `hello` until a snapshot gives it a seat (SPEC §8.1). The directory's checks are
+   * best effort, so a creator who finds others present joins their room rather than starting a
+   * fresh one that could outrank its host. The phase becomes `closed` if the transport can't
+   * connect.
    */
   async start(): Promise<void> {
     let connection: RoomConnection;
@@ -173,7 +164,7 @@ export class RoomClient {
     ];
     const present = connection.presence();
     this.update({ phase: 'joining', status: connection.status(), present });
-    if (this.created || present.every((id) => id === this.self)) this.startFresh(1);
+    if (present.every((id) => id === this.self)) this.startFresh(1);
     else this.startJoining();
   }
 
@@ -266,39 +257,24 @@ export class RoomClient {
     this.beginHosting();
   }
 
-  /** Starts acting as host: takes a seat, applies presence, sends a snapshot and keeps the name. */
+  /** Starts acting as host: takes a seat, applies presence and sends a snapshot. */
   private beginHosting(): void {
     this.hosting = true;
     this.clearJoinTimers();
     this.apply({ type: 'intent', from: this.self, message: { type: 'hello', name: this.name } });
     this.apply({ type: 'presence', present: this.presentNow() });
     this.scheduleBroadcast();
-    this.keepAlive();
     this.update({ hosting: true, stillConnecting: false });
   }
 
   /** Stops acting as host after another host outranked this one (SPEC §8.2). */
   private stepDown(): void {
     this.hosting = false;
-    for (const timer of [this.flushTimer, this.tickTimer, this.keepAliveTimer]) {
+    for (const timer of [this.flushTimer, this.tickTimer]) {
       if (timer !== null) this.clock.clearTimeout(timer);
     }
-    this.flushTimer = this.tickTimer = this.keepAliveTimer = null;
+    this.flushTimer = this.tickTimer = null;
     this.update({ hosting: false });
-  }
-
-  /** Renews the room's lease now and every `KEEP_ALIVE_INTERVAL_MS` while host (SPEC §7). */
-  private keepAlive(): void {
-    if (this.keepAliveTimer !== null) this.clock.clearTimeout(this.keepAliveTimer);
-    this.keepAliveTimer = null;
-    if (!this.hosting || this.current.nameLost) return;
-    this.directory.keepAlive(this.ticket).then(
-      (result) => {
-        if (result === 'lost') this.update({ nameLost: true });
-      },
-      () => undefined,
-    );
-    this.keepAliveTimer = this.clock.setTimeout(() => this.keepAlive(), KEEP_ALIVE_INTERVAL_MS);
   }
 
   // Incoming

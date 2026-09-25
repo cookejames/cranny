@@ -21,6 +21,12 @@ let adapters: RoomAdapters | undefined;
  */
 export function roomAdapters(): RoomAdapters | null {
   if (import.meta.env.VITE_ROOM_TRANSPORT !== 'local') return null;
-  adapters ??= { transport: new LocalTransport(), directory: new LocalDirectory() };
+  if (!adapters) {
+    const transport = new LocalTransport();
+    adapters = {
+      transport,
+      directory: new LocalDirectory({ occupied: (c) => transport.occupied(c) }),
+    };
+  }
   return adapters;
 }

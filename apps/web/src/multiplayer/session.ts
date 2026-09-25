@@ -23,18 +23,16 @@ export type SessionSnapshot =
   | { stage: 'in-room'; self: PlayerId; view: RoomView };
 
 /** A ticket the Multiplayer screen already has, so the room screen needn't ask again. */
-type HandOff = { ticket: RoomTicket; self: PlayerId; created: boolean };
+type HandOff = { ticket: RoomTicket; self: PlayerId };
 
 const handOffs = new Map<string, HandOff>();
 
 /**
  * Passes a ticket from the Multiplayer screen to the room screen it is about to open. Kept in
- * memory only: a reload joins through the directory instead.
- *
- * @param created - Whether this player just created the room, and so starts as its host.
+ * memory only: a reload goes through the directory instead.
  */
-export function handOff(ticket: RoomTicket, self: PlayerId, created: boolean): void {
-  handOffs.set(ticket.room, { ticket, self, created });
+export function handOff(ticket: RoomTicket, self: PlayerId): void {
+  handOffs.set(ticket.room, { ticket, self });
 }
 
 /** Test and debugging seams; the defaults are for the browser. */
@@ -125,7 +123,12 @@ export class RoomSession {
     if (handed?.self !== self) handed = undefined;
     let ticket = handed?.ticket;
     if (!ticket) {
-      const joined = await this.adapters.directory.join(this.room, self);
+      // A tab coming back to its own seat (a reload, or Try again) rejoins, which works even if
+      // it was the last one there; anyone else needs someone in the room (SPEC §7).
+      const { directory } = this.adapters;
+      const joined = await (claim.returning
+        ? directory.rejoin(this.room, self)
+        : directory.join(this.room, self));
       if (this.closed) return;
       if (isDirectoryError(joined)) {
         this.set({ stage: 'failed', error: joined.error });
@@ -135,11 +138,9 @@ export class RoomSession {
     }
     const client = new RoomClient({
       transport: this.adapters.transport,
-      directory: this.adapters.directory,
       ticket,
       self,
       name: this.name,
-      created: handed?.created ?? false,
       ...(clock && { clock }),
       ...(random && { random }),
     });

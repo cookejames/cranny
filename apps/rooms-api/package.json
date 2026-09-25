@@ -1,0 +1,21 @@
+{
+  "name": "@cranny/rooms-api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/handler.ts --bundle --platform=node --target=node24 --format=esm --minify --sourcemap --outfile=dist/handler.mjs --banner:js=\"import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);\"",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@aws-sdk/client-ssm": "^3.1139.0",
+    "@cranny/multiplayer": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.6",
+    "esbuild": "^0.28.2",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.1"
+  }
+}

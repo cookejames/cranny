@@ -74,7 +74,7 @@ async function createRoom(
     const self = seatIdFor(room);
     const result = await directory.create(room, self);
     if (!isDirectoryError(result)) {
-      handOff(result, self, true);
+      handOff(result, self);
       return { room };
     }
     if (result.error === 'unavailable') return { error: UNAVAILABLE };
@@ -154,7 +154,7 @@ export function MultiplayerPage({ directory }: { directory: RoomDirectory }) {
       setJoinError(joinErrorMessage(result.error, room));
       return;
     }
-    handOff(result, self, false);
+    handOff(result, self);
     void navigate(`/m/${room}`);
   };
 

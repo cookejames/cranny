@@ -181,16 +181,7 @@ function InRoom({ room, session, client, self, view, onRetry, startSolved }: InR
       />
     );
   } else if (round.status === 'lobby') {
-    body = (
-      <Lobby
-        state={state}
-        self={self}
-        client={client}
-        names={names}
-        nameLost={view.nameLost}
-        onLeave={askToLeave}
-      />
-    );
+    body = <Lobby state={state} self={self} client={client} names={names} onLeave={askToLeave} />;
   } else {
     body = (
       <SittingOut

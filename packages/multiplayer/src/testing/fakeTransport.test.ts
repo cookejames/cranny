@@ -7,7 +7,6 @@ import { FakeTransport } from './fakeTransport.ts';
 const ticket = (room: string): RoomTicket => ({
   room,
   channel: `channel-${room}`,
-  roomKey: 'key',
   credential: { value: null, expiresInMs: 3_600_000 },
 });
 

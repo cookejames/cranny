@@ -11,3 +11,8 @@ output "distribution_id" {
 output "url" {
   value = "https://${var.domain_name}"
 }
+
+output "rooms_function_name" {
+  description = "The rooms API Lambda; scripts/deploy.sh uploads apps/rooms-api/dist to it."
+  value       = aws_lambda_function.rooms.function_name
+}

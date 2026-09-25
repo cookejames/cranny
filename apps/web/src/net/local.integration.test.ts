@@ -1,20 +1,20 @@
 import {
   isDirectoryError,
-  LEASE_MS,
   RoomClient,
   SNAPSHOT_INTERVAL_MS,
   systemClock,
+  type CreateError,
+  type JoinError,
   type PlayerId,
+  type RoomTicket,
 } from '@cranny/multiplayer';
-import { seededRandom } from '@cranny/multiplayer/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { loadLocalRooms } from '../storage/storage.ts';
 import { LocalDirectory } from './localDirectory.ts';
 import { LocalTransport, SILENCE_MS } from './localTransport.ts';
 import { fakePage, memoryBuses } from './testing.ts';
 
 // RoomClient over the local adapters, with each "tab" having its own transport, directory and
-// page, sharing one bus and local storage as tabs of one browser do.
+// page, sharing one bus as tabs of one browser do.
 
 const ROOM = 'amber-otter-quilt';
 const A: PlayerId = 'A'.repeat(22);
@@ -34,21 +34,28 @@ afterEach(async () => {
   vi.useRealTimers();
 });
 
-/** Opens a tab for `self` that creates or joins the room, and lets it settle. */
-async function openTab(self: PlayerId, create: boolean) {
+/** A tab's transport, page and directory, on the shared bus. */
+function tab() {
   const { page, fire } = fakePage();
   const transport = new LocalTransport({ openBus: buses.openBus, lifecycle: page });
-  const directory = new LocalDirectory({ random: seededRandom(self.charCodeAt(0)) });
-  const ticket = create ? await directory.create(ROOM, self) : await directory.join(ROOM, self);
+  const directory = new LocalDirectory({ occupied: (c) => transport.occupied(c) });
+  return { transport, directory, fire };
+}
+
+/** Runs a directory call while letting its presence probe finish. */
+async function ask<T>(promise: Promise<T>): Promise<T> {
+  await vi.advanceTimersByTimeAsync(1_000);
+  return promise;
+}
+
+/** Opens a tab for `self` that creates or joins the room, and lets it settle. */
+async function openTab(self: PlayerId, create: boolean) {
+  const { transport, directory, fire } = tab();
+  const ticket = await ask<RoomTicket | CreateError | JoinError>(
+    create ? directory.create(ROOM, self) : directory.join(ROOM, self),
+  );
   if (isDirectoryError(ticket)) throw new Error(ticket.error);
-  const client = new RoomClient({
-    transport,
-    directory,
-    ticket,
-    self,
-    name: self[0]!,
-    created: create,
-  });
+  const client = new RoomClient({ transport, ticket, self, name: self[0]! });
   clients.push(client);
   const starting = client.start();
   await vi.advanceTimersByTimeAsync(1_000);
@@ -78,7 +85,11 @@ describe('RoomClient over the local adapters', () => {
     await vi.advanceTimersByTimeAsync(SNAPSHOT_INTERVAL_MS * 5);
     expect(b.client.view().hosting).toBe(true);
     expect(Date.now() - takeoverAt).toBeLessThan(SILENCE_MS);
-    // The new host renews the lease on taking over.
-    expect(loadLocalRooms().leases[ROOM]?.expiresAt).toBeGreaterThanOrEqual(takeoverAt + LEASE_MS);
+    // The room is still there for a newcomer while B is in it, and gone once B leaves too. (A's
+    // page only fired pagehide; a closed tab's connection would be gone, so close it too.)
+    await a.client.close();
+    expect(isDirectoryError(await ask(tab().directory.join(ROOM, 'C'.repeat(22))))).toBe(false);
+    await b.client.close();
+    expect(await ask(tab().directory.join(ROOM, 'C'.repeat(22)))).toEqual({ error: 'not-found' });
   });
 });

@@ -196,15 +196,6 @@
   cursor: pointer;
 }
 
-.notice {
-  margin: 0;
-  padding: 12px 14px;
-  border-radius: var(--radius-control);
-  background: var(--color-tile);
-  font-size: 15px;
-  line-height: 1.4;
-}
-
 .section {
   display: flex;
   flex-direction: column;

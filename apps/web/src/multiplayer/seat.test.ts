@@ -28,7 +28,7 @@ describe('claimSeat', () => {
     saveSeat({ room: 'amber-otter-quilt', playerId: A });
     saveMultiplayerRound(board);
     const claim = await claimSeat('amber-otter-quilt', { locks });
-    expect(claim.self).toBe(A);
+    expect(claim).toMatchObject({ self: A, returning: true });
     expect(locks.held).toEqual(new Set([seatLockName(A)]));
     expect(loadMultiplayerRound()).toEqual(board);
     claim.release();
@@ -42,6 +42,7 @@ describe('claimSeat', () => {
     saveMultiplayerRound({ ...board, room: 'other-room' });
     const claim = await claimSeat('amber-otter-quilt', { locks: fakeLocks() });
     expect(claim.self).not.toBe(A);
+    expect(claim.returning).toBe(false);
     expect(isPlayerId(claim.self)).toBe(true);
     expect(loadSeat()).toEqual({ room: 'amber-otter-quilt', playerId: claim.self });
     expect(loadMultiplayerRound()).toBeNull();
@@ -55,6 +56,7 @@ describe('claimSeat', () => {
     // The duplicate starts with a copy of the original's session storage.
     const duplicate = await claimSeat('amber-otter-quilt', { locks });
     expect(original.self).toBe(A);
+    expect(duplicate).toMatchObject({ returning: false });
     expect(duplicate.self).not.toBe(A);
     expect(loadSeat()?.playerId).toBe(duplicate.self);
     expect(loadMultiplayerRound()).toBeNull();

@@ -22,7 +22,6 @@ type LobbyProps = {
   client: RoomClient;
   names: ReadonlyMap<PlayerId, string>;
   /** The directory gave the room's name away (SPEC §7 Lost name). */
-  nameLost: boolean;
   /** Asks to leave the room (back and Finish). */
   onLeave: () => void;
 };
@@ -40,7 +39,7 @@ const notReady = (count: number) => `${count} ${count === 1 ? 'player' : 'player
  * round's results, the players (or totals) with ready ticks and away markers, the Ready toggle
  * and the ready countdown, and Finish.
  */
-export function Lobby({ state, self, client, names, nameLost, onLeave }: LobbyProps) {
+export function Lobby({ state, self, client, names, onLeave }: LobbyProps) {
   const [toast, setToast] = useState<string | null>(null);
   const hideToast = useCallback(() => setToast(null), []);
   const { round, lastResult } = state;
@@ -75,13 +74,6 @@ export function Lobby({ state, self, client, names, nameLost, onLeave }: LobbyPr
           Share
         </button>
       </header>
-
-      {nameLost && (
-        <p className={styles.notice} role="status">
-          This room’s name has been reused, so new players can’t join. Everyone here can keep
-          playing.
-        </p>
-      )}
 
       {lastResult && <RoundResults result={lastResult} self={self} names={names} />}
 

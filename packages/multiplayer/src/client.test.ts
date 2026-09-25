@@ -1,15 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { HELLO_RETRY_MS, HOST_FALLBACK_MS, RoomClient, SNAPSHOT_INTERVAL_MS } from './client.ts';
-import {
-  isDirectoryError,
-  KEEP_ALIVE_INTERVAL_MS,
-  LEASE_MS,
-  type RoomTicket,
-} from './directory.ts';
+import { isDirectoryError, type RoomTicket } from './directory.ts';
 import { encodeMessage, type PlayerId } from './protocol.ts';
 import { CLOSE_OUT_MS, MAX_PRESENT, READY_TIMEOUT_MS, REVEAL_COUNTDOWN_MS } from './rules.ts';
 import { FakeDirectory } from './testing/fakeDirectory.ts';
 import { FakeTransport, type FakeConnection } from './testing/fakeTransport.ts';
+import type { RoomTransport } from './transport.ts';
 import { seededRandom } from './testing/random.ts';
 
 const ROOM = 'amber-otter-quilt';
@@ -30,7 +26,9 @@ let nextSeed = 1;
 beforeEach(() => {
   vi.useFakeTimers();
   transport = new FakeTransport({ latencyMs: LATENCY_MS, dropDetectMs: DROP_DETECT_MS });
-  directory = new FakeDirectory({ random: seededRandom(99) });
+  directory = new FakeDirectory({
+    occupied: (channel) => transport.presenceOf(channel).length > 0,
+  });
   clients = [];
 });
 
@@ -43,21 +41,26 @@ afterEach(async () => {
 const wait = (ms = SETTLE_MS) => vi.advanceTimersByTimeAsync(ms);
 
 /** A ticket for the room: creates it for the first player, joins it for the rest. */
-async function ticketFor(self: PlayerId, create: boolean): Promise<RoomTicket> {
-  const result = create ? await directory.create(ROOM, self) : await directory.join(ROOM, self);
+async function ticketFor(
+  self: PlayerId,
+  how: 'create' | 'join' | 'rejoin' | boolean,
+): Promise<RoomTicket> {
+  const call = how === true ? 'create' : how === false ? 'join' : how;
+  const result = await directory[call](ROOM, self);
   if (isDirectoryError(result)) throw new Error(result.error);
   return result;
 }
 
 /** Starts a player's client and lets the room settle. */
-async function join(self: PlayerId, options: { create?: boolean; name?: string } = {}) {
+async function join(
+  self: PlayerId,
+  options: { create?: boolean; how?: 'create' | 'join' | 'rejoin'; name?: string } = {},
+) {
   const client = new RoomClient({
     transport,
-    directory,
-    ticket: await ticketFor(self, options.create ?? false),
+    ticket: await ticketFor(self, options.how ?? options.create ?? false),
     self,
     name: options.name ?? `Player ${self[0]}`,
-    created: options.create ?? false,
     random: seededRandom(nextSeed++),
   });
   clients.push(client);
@@ -178,14 +181,22 @@ describe('simulations', () => {
 
   it('settles two hosts to one', async () => {
     const ticket = await ticketFor(A, true);
+    // Presence that hasn't synced yet: each connection first sees only itself.
+    const lonely: RoomTransport = {
+      connect: async (t, self) => {
+        const connection = await transport.connect(t, self);
+        const real = connection.presence.bind(connection);
+        let first = true;
+        connection.presence = () => (first ? ((first = false), [self]) : real());
+        return connection;
+      },
+    };
     const make = (self: PlayerId) =>
       new RoomClient({
-        transport,
-        directory,
+        transport: lonely,
         ticket,
         self,
         name: `Player ${self[0]}`,
-        created: true,
         random: seededRandom(nextSeed++),
       });
     const b = make(B);
@@ -267,12 +278,55 @@ describe('simulations', () => {
 });
 
 describe('joining', () => {
-  it('becomes host of an empty room it didn’t create', async () => {
-    await (await room()).at(0)!.close();
+  it('refuses to join an emptied room, but a rejoin starts it again with a fresh state', async () => {
+    const [a] = await room(B);
+    await clients[1]!.close();
+    a!.rename('Ann');
     await wait();
-    const b = await join(B);
-    expect(b.view()).toMatchObject({ hosting: true, phase: 'in-room' });
-    expect(stateOf(b)).toMatchObject({ term: 1, hostId: B });
+    await a!.close();
+    await wait();
+    expect(await directory.join(ROOM, A)).toEqual({ error: 'not-found' });
+    const again = await join(A, { how: 'rejoin' });
+    expect(again.view()).toMatchObject({ hosting: true, phase: 'in-room' });
+    expect(stateOf(again)).toMatchObject({ term: 1, hostId: A });
+    expect(stateOf(again).seats.map((s) => s.id)).toEqual([A]);
+  });
+
+  it('puts two players who create the same room at once in one room with one host', async () => {
+    const tickets = [await ticketFor(A, 'create'), await ticketFor(B, 'create')];
+    const [a, b] = [A, B].map(
+      (self, i) =>
+        new RoomClient({
+          transport,
+          ticket: tickets[i]!,
+          self,
+          name: `Player ${self[0]}`,
+          random: seededRandom(nextSeed++),
+        }),
+    );
+    clients.push(a!, b!);
+    await Promise.all([a!.start(), b!.start()]);
+    await wait(2 * SETTLE_MS);
+    expect([a!, b!].filter((c) => c.view().hosting)).toHaveLength(1);
+    expect(stateOf(a!).seats.map((s) => s.id)).toEqual(stateOf(b!).seats.map((s) => s.id));
+    expect(stateOf(a!).seats).toHaveLength(2);
+  });
+
+  it('joins an occupied room it was told was free, without resetting it', async () => {
+    const [a, b] = await room(B);
+    b!.rename('Bea');
+    await wait();
+    const before = stateOf(a!);
+    // A best-effort create that missed the players already there (SPEC §7).
+    const c = await join(C, { how: 'rejoin' });
+    expect(c.view().hosting).toBe(false);
+    expect(a!.view().hosting).toBe(true);
+    expect(stateOf(c)).toMatchObject({ term: before.term, hostId: A });
+    expect(stateOf(c).seats.map((s) => [s.id, s.name])).toEqual([
+      [A, 'Player A'],
+      [B, 'Bea'],
+      [C, 'Player C'],
+    ]);
   });
 
   it('shows "still connecting" while nobody answers, then starts the room itself', async () => {
@@ -345,26 +399,6 @@ describe('the host', () => {
       expect(snapshots[i]! - snapshots[i - 1]!).toBeGreaterThanOrEqual(SNAPSHOT_INTERVAL_MS);
     }
     expect(stateOf(b!).seats[1]!.name).toBe('Name 19');
-  });
-
-  it('keeps the name alive every 4 minutes while host, and only while host', async () => {
-    const keepAlive = vi.spyOn(directory, 'keepAlive');
-    const [a, b] = await room(B);
-    expect(keepAlive).toHaveBeenCalledTimes(1);
-    await wait(KEEP_ALIVE_INTERVAL_MS * 3);
-    expect(keepAlive).toHaveBeenCalledTimes(4);
-    expect(directory.leaseExpiresAt(ROOM)).toBeGreaterThan(Date.now() + LEASE_MS / 2);
-    await a!.close();
-    await wait();
-    expect(b!.view().hosting).toBe(true);
-    expect(keepAlive).toHaveBeenCalledTimes(5); // at once on becoming host
-  });
-
-  it('shows the lost-name notice when another room took the name', async () => {
-    const [a] = await room();
-    vi.spyOn(directory, 'keepAlive').mockResolvedValue('lost');
-    await wait(KEEP_ALIVE_INTERVAL_MS);
-    expect(a!.view().nameLost).toBe(true);
   });
 
   it('starts a round by the ready timeout, and the others sit out', async () => {

@@ -24,7 +24,6 @@ function ticket(room: string, self: PlayerId): RoomTicket {
   return {
     room,
     channel: `channel-${room}`,
-    roomKey: 'key',
     credential: { value, expiresInMs: 1 },
   };
 }

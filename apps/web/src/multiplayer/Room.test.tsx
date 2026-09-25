@@ -98,7 +98,7 @@ describe('the Multiplayer screen', () => {
   });
 
   it('creates a room with a chosen name, and says when it is in use', async () => {
-    await directory.create('friday-night', C);
+    await addPlayer('friday-night', C, 'Cat', true);
     renderTab('/multiplayer');
     await settle();
     fireEvent.click(screen.getByText('Choose the room name'));
@@ -367,6 +367,27 @@ describe('seats', () => {
     await settle(500);
     expect(uiId()).toBe(secondId);
     expect(b.view().room!.seats).toHaveLength(3);
+  });
+
+  it('lets the last player in a room reload back into it, as its host', async () => {
+    const room = await createRoom();
+    const self = uiId();
+    cleanup();
+    await settle(500);
+    expect(transport.presenceOf(`room:${room}`)).toEqual([]);
+    renderTab(`/m/${room}`);
+    await settle(500);
+    expect(uiId()).toBe(self);
+    expect(screen.getByText('You')).toBeInTheDocument();
+    expect(screen.getByText('Waiting for another player')).toBeInTheDocument();
+  });
+
+  it('says a room isn’t there when a new tab opens a room nobody is in', async () => {
+    sessionStorage.clear();
+    renderTab('/m/empty-room');
+    await settle(500);
+    expect(path()).toBe('/multiplayer');
+    expect(screen.getByRole('alert')).toHaveTextContent('No room called empty-room');
   });
 
   it('gives a duplicated tab a new seat', async () => {
