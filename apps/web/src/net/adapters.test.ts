@@ -10,6 +10,8 @@ async function load() {
     ...(await import('./adapters.ts')),
     ...(await import('./localDirectory.ts')),
     ...(await import('./localTransport.ts')),
+    ...(await import('./ablyTransport.ts')),
+    ...(await import('./httpDirectory.ts')),
   };
 }
 
@@ -32,6 +34,16 @@ describe('room adapters', () => {
     const adapters = roomAdapters();
     expect(adapters?.transport).toBeInstanceOf(LocalTransport);
     expect(adapters?.directory).toBeInstanceOf(LocalDirectory);
+    expect(roomAdapters()).toBe(adapters);
+  });
+
+  it('uses Ably and the rooms API, created once, for VITE_ROOM_TRANSPORT=ably', async () => {
+    vi.stubEnv('VITE_ROOM_TRANSPORT', 'ably');
+    const { multiplayerEnabled, roomAdapters, AblyTransport, HttpDirectory } = await load();
+    expect(multiplayerEnabled).toBe(true);
+    const adapters = roomAdapters();
+    expect(adapters?.transport).toBeInstanceOf(AblyTransport);
+    expect(adapters?.directory).toBeInstanceOf(HttpDirectory);
     expect(roomAdapters()).toBe(adapters);
   });
 });

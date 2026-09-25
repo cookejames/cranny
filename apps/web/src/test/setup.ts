@@ -15,6 +15,8 @@ if (typeof HTMLDialogElement !== 'undefined' && !HTMLDialogElement.prototype.sho
 }
 
 afterEach(() => {
+  // Files that opt into the node environment (the Ably test) have no DOM or web storage.
+  if (typeof document === 'undefined') return;
   cleanup();
   localStorage.clear();
   sessionStorage.clear();

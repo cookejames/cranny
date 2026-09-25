@@ -87,8 +87,12 @@
 
 ## Phase 6 — Ably transport and launch
 
-- [ ] **T6.1 `AblyTransport`** (`ably/modular`: `BaseRealtime` with `WebSocketTransport`, `FetchRequest` and `RealtimePresence`) using token auth from the ticket (`authCallback` returns the ticket's credential first, then calls `refreshCredential`), `transportParams: { heartbeatInterval: 10000, remainPresentFor: 5000 }`, presence de-duplicated by `clientId`, `from` = `message.clientId`, rejected publishes (42913) treated as lost messages, and status mapping.
+- [x] **T6.1 `AblyTransport`** (`ably/modular`: `BaseRealtime` with `WebSocketTransport`, `FetchRequest` and `RealtimePresence`) using token auth from the ticket (`authCallback` returns the ticket's credential first, then calls `refreshCredential`), `transportParams: { heartbeatInterval: 10000, remainPresentFor: 5000 }`, presence de-duplicated by `clientId`, `from` = `message.clientId`, rejected publishes (42913) treated as lost messages, and status mapping.
       _Done when:_ it passes the conformance suite with `ABLY_KEY` set.
-- [ ] **T6.2 Production switch.** Build with `VITE_ROOM_TRANSPORT=ably`, and the Home Multiplayer button appears.
-- [ ] **T6.3 Real-device test.** A 3+ phone game over mobile data and Wi-Fi: lock the host's phone mid-round, reload a player mid-round, and join late. Check that another room's players are never visible.
-- [ ] **T6.4 Update CLAUDE.md and the README** with multiplayer commands, adapter selection and conventions.
+  - Done: `apps/web/src/net/ablyTransport.ts`. Passes the conformance suite against real Ably (`ablyTransport.test.ts`, gated on `ABLY_KEY`). Its harness wraps `WebSocket` to cut a player's sockets without Ably's goodbye, and a cut player left presence in about 5.4 s. The SDK is loaded by dynamic import on first connect, so solo players never download it (a 52 KB gzip chunk).
+- [x] **T6.2 Production switch.** Build with `VITE_ROOM_TRANSPORT=ably`, and the Home Multiplayer button appears.
+  - Done: `apps/web/.env.production` sets `ably`, `vite.config.ts` accepts it, and `adapters.ts` builds `AblyTransport` + `HttpDirectory`. Checked each build's bundle: off has neither adapter, `local` only the local ones, `ably` only Ably's (in its own chunk). Checked a production build in Chrome through `pnpm preview` (production CSP, `/api` proxied to the deployed Lambda): two tabs created and joined a room, readied and played, with no CSP violations. Live after the next deploy. `pnpm --filter @cranny/web dev:ably` for local play over Ably.
+- [x] **T6.3 Real-device test.** A 3+ phone game over mobile data and Wi-Fi: lock the host's phone mid-round, reload a player mid-round, and join late. Check that another room's players are never visible.
+  - Done: tested by hand on phones against production after the 2026-09-25 deploy, and reported working.
+- [x] **T6.4 Update CLAUDE.md and the README** with multiplayer commands, adapter selection and conventions.
+  - Done: CLAUDE.md (adapter selection, the lazy Ably import, `dev:ably`, the key-gated conformance run, the SSM key) and the README (how to play multiplayer, local play over tabs or Ably, the workspace, the Ably key setup, the deploy steps and a live API check).
