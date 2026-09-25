@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "debugging-with-ably-cli": {
+      "source": "ably/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/debugging-with-ably-cli/SKILL.md",
+      "computedHash": "5448f564e4b8d33e63b758e403afef30049a5d9285355a903c629af8db49f479"
+    },
+    "using-ably": {
+      "source": "ably/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/using-ably/SKILL.md",
+      "computedHash": "6c7a24d3b16ecfbefc9d3ceb9d5ba53ab228c0028b0429a028909b4f5747d759"
+    }
+  }
+}
