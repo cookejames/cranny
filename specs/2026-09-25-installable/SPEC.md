@@ -95,7 +95,7 @@ A small secondary button, **Install app**, below the Play and Multiplayer button
 - **Content types:** `aws s3 sync` doesn't know `.webmanifest` and would upload it as `binary/octet-stream`. The deploy script uploads it separately as `application/manifest+json`. Everything in `public/` is outside `assets/`, so it already gets `no-cache`, which is what we want: a changed icon or manifest is picked up straight away.
 - **Missing files:** CloudFront answers any missing path with `index.html` and 200, so a broken icon path would silently serve HTML. A test checks every file the manifest and `index.html` reference exists in `public/` (§7).
 - **Preview:** Vite's preview server serves `.webmanifest` correctly, so `pnpm preview` is enough to test installs locally over `http://localhost`, which browsers treat as secure.
-- No Terraform changes.
+- No Terraform file changes, but CloudFront reads the CSP from `security-headers.json` through Terraform (`infra/cdn.tf`), so the new directive reaches production only after a `terraform apply`.
 
 ## 7. Testing
 
@@ -115,4 +115,4 @@ A small secondary button, **Install app**, below the Play and Multiplayer button
 
 ## 9. Decisions log
 
-Installable but online only, with no service worker or offline play · updates arrive silently on the next launch (automatic, since `index.html` is `no-cache`) · letter-mark icon, a capital C in the display font · an Install app button on Home, using the browser's dialog where available and instructions on iOS Safari, hidden once installed · no Terraform changes.
+Installable but online only, with no service worker or offline play · updates arrive silently on the next launch (automatic, since `index.html` is `no-cache`) · letter-mark icon, a capital C in the display font · an Install app button on Home, using the browser's dialog where available and instructions on iOS Safari, hidden once installed · no Terraform file changes (the CSP change needs an apply).

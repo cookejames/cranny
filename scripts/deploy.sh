@@ -49,9 +49,15 @@ echo "Uploading assets to s3://${BUCKET}…"
 aws s3 sync "$DIST/assets" "s3://$BUCKET/assets" \
   --cache-control "public, max-age=31536000, immutable"
 
-# Everything else (index.html) must be revalidated on every load, so a deploy shows up at once.
+# Everything else (index.html, the manifest and icons) must be revalidated on every load, so a
+# deploy shows up at once. The AWS CLI doesn't know .webmanifest and would upload it as
+# binary/octet-stream, so the manifest goes up on its own, before the index.html that links it.
+aws s3 cp "$DIST/manifest.webmanifest" "s3://$BUCKET/manifest.webmanifest" \
+  --content-type "application/manifest+json" \
+  --cache-control "no-cache"
 aws s3 sync "$DIST" "s3://$BUCKET" \
   --exclude "assets/*" \
+  --exclude "manifest.webmanifest" \
   --delete \
   --cache-control "no-cache"
 
