@@ -35,7 +35,7 @@ type BoardProps = {
   board: BoardState;
   /**
    * Draw every cell as empty and leave the blocked cells out of the DOM entirely, so the layout
-   * can't be read before the clock starts (SPEC.md §5, pre-start).
+   * can't be read before the clock starts (specs/2026-09-25-single-player/SPEC.md §5, pre-start).
    */
   hideBlocked?: boolean;
   /** A piece being dragged (or flying back): drawn by the floating layer, so left off the board. */
@@ -59,7 +59,7 @@ const pieceColour = (id: PieceId) =>
 const cellStart = (index: number) => index * (1 + CELL_GAP);
 
 /**
- * The 6×6 board (SPEC.md §9): a CSS grid of empty and blocked cells, with placed pieces drawn on
+ * The 6×6 board (specs/2026-09-25-single-player/SPEC.md §9): a CSS grid of empty and blocked cells, with placed pieces drawn on
  * top as merged SVG shapes so each piece reads as one outlined shape, not just a colour.
  */
 export function Board({

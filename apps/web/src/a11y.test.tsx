@@ -8,7 +8,7 @@ import { Results } from './play/Results.tsx';
 import { saveStats } from './storage/storage.ts';
 
 /**
- * Automated accessibility checks (SPEC.md §10) with axe on every screen. jsdom has no layout, so
+ * Automated accessibility checks (specs/2026-09-25-single-player/SPEC.md §10) with axe on every screen. jsdom has no layout, so
  * colour contrast is checked separately (styles/contrast.test.ts) and in a real browser, and
  * page-level rules that need layout (such as "the page has an h1") come back incomplete from
  * axe; those are asserted directly.

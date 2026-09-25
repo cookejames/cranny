@@ -3,7 +3,7 @@ import { formatTime } from '../game/formatTime.ts';
 /** How a share attempt ended; the caller shows a toast for `copied` and `failed`. */
 export type ShareResult = 'shared' | 'copied' | 'cancelled' | 'failed';
 
-/** The message shared with a grid link (SPEC.md §5). */
+/** The message shared with a grid link (specs/2026-09-25-single-player/SPEC.md §5). */
 export const shareText = (ms: number) =>
   `I solved this Cranny grid in ${formatTime(ms, { tenths: true })} — can you beat it?`;
 
@@ -35,7 +35,7 @@ function copyBySelection(text: string): boolean {
 }
 
 /**
- * Shares a grid (SPEC.md §5): the system share sheet where there is one, otherwise the text and
+ * Shares a grid (specs/2026-09-25-single-player/SPEC.md §5): the system share sheet where there is one, otherwise the text and
  * link are copied to the clipboard (with the Clipboard API, or by selection where that's
  * missing). Never throws.
  *

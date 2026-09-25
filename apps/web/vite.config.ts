@@ -9,7 +9,7 @@ export default defineConfig({
     assetsInlineLimit: 0,
   },
   // `pnpm preview` serves the production build with the same headers CloudFront will send
-  // (SPEC.md §11), so CSP problems show up before deploying.
+  // (specs/2026-09-25-single-player/SPEC.md §11), so CSP problems show up before deploying.
   preview: { headers: securityHeaders },
   test: {
     environment: 'jsdom',

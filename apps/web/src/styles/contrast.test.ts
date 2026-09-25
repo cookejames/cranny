@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import tokens from './tokens.css?raw';
 
 /**
- * Text contrast (SPEC.md §10): every text colour the stylesheets use, on every background it
+ * Text contrast (specs/2026-09-25-single-player/SPEC.md §10): every text colour the stylesheets use, on every background it
  * sits on, must reach 4.5:1 (WCAG AA for normal text). Read from the real tokens, so a palette
  * change that breaks contrast fails here. Disabled controls are exempt under WCAG.
  */

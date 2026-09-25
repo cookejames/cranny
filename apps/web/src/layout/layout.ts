@@ -1,5 +1,5 @@
 /**
- * Play-screen sizing (SPEC.md §9). The board is the largest square that fits the column width and
+ * Play-screen sizing (specs/2026-09-25-single-player/SPEC.md §9). The board is the largest square that fits the column width and
  * leaves room for everything else on the screen; tray tiles scale with it. Vertical stack, top to
  * bottom: header, progress row, board, controls row, 3 rows of tray tiles.
  */

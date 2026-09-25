@@ -1,6 +1,6 @@
 import { RECENT_LIMIT, type Stats } from '../storage/storage.ts';
 
-/** What a solve did to the player's stats, for the Results view (SPEC.md §5, §8). */
+/** What a solve did to the player's stats, for the Results view (specs/2026-09-25-single-player/SPEC.md §5, §8). */
 export type SolveOutcome = {
   /** The solve's time. */
   ms: number;
@@ -21,7 +21,7 @@ export const averageMs = (stats: Stats): number | null =>
     : stats.recentMs.reduce((sum, ms) => sum + ms, 0) / stats.recentMs.length;
 
 /**
- * Adds a solve to the stats (SPEC.md §8): one more solved, the best time so far, and the last
+ * Adds a solve to the stats (specs/2026-09-25-single-player/SPEC.md §8): one more solved, the best time so far, and the last
  * `RECENT_LIMIT` times for the average.
  *
  * @returns The new stats, and the outcome to show on Results.

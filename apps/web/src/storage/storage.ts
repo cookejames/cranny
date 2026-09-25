@@ -9,13 +9,13 @@ import {
   type Placement,
 } from '@cranny/engine';
 
-// Device-only persistence (SPEC.md §5, §8). Storage can be missing, full, blocked (private
+// Device-only persistence (specs/2026-09-25-single-player/SPEC.md §5, §8). Storage can be missing, full, blocked (private
 // browsing, disabled cookies) or hold stale or hand-edited data, so every access is wrapped in
 // try/catch and every value read back is validated. The game must work without storage.
 
 export const STATS_KEY = 'cranny.stats.v1';
 export const ROUND_KEY = 'cranny.round.v1';
-/** How many recent solve times feed the average (SPEC.md §8). */
+/** How many recent solve times feed the average (specs/2026-09-25-single-player/SPEC.md §8). */
 export const RECENT_LIMIT = 10;
 
 /** `localStorage`, or null if it is unavailable (merely accessing it can throw). */
@@ -67,7 +67,7 @@ const isDuration = (value: unknown): value is number =>
 // ---------------------------------------------------------------------------------------------
 // Stats
 
-/** Personal stats kept on the device (SPEC.md §8). Times are in milliseconds. */
+/** Personal stats kept on the device (specs/2026-09-25-single-player/SPEC.md §8). Times are in milliseconds. */
 export type Stats = { solved: number; bestMs: number | null; recentMs: number[] };
 
 export const EMPTY_STATS: Stats = { solved: 0, bestMs: null, recentMs: [] };
@@ -98,7 +98,7 @@ export function saveStats(stats: Stats): boolean {
 // ---------------------------------------------------------------------------------------------
 // Round in progress
 
-/** The round in progress, saved after every change so a reload can restore it (SPEC.md §5). */
+/** The round in progress, saved after every change so a reload can restore it (specs/2026-09-25-single-player/SPEC.md §5). */
 export type SavedRound = {
   /** Canonical grid code, e.g. `1XDWT5H`. */
   code: string;

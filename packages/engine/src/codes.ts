@@ -18,7 +18,7 @@ export class GridCodeError extends Error {
 
   /**
    * @param kind - Why decoding failed.
-   * @param message - User-facing text for the error screen (SPEC.md §4).
+   * @param message - User-facing text for the error screen (specs/2026-09-25-single-player/SPEC.md §4).
    */
   constructor(kind: GridCodeErrorKind, message: string) {
     super(message);

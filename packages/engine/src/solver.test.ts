@@ -126,7 +126,7 @@ describe('solve', () => {
   it('has no performance blow-ups (regression guard; see `pnpm bench` for the real budget)', () => {
     // Timings under Vitest run ~2.5× slower than plain Node, so this bound only catches large
     // regressions (the first solver took 560 ms on some layouts). `bench/solver.ts` measures the
-    // SPEC.md §4 budget properly.
+    // specs/2026-09-25-single-player/SPEC.md §4 budget properly.
     const layouts = [
       [0, 19, 21, 23, 31, 33, 35], // slowest known layout (unsolvable)
       [1, 5, 18, 27, 29, 30, 32],

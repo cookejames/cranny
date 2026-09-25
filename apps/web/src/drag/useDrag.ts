@@ -38,7 +38,7 @@ import {
 } from './snap.ts';
 import { isTap, type ClientPoint } from './tap.ts';
 
-/** How long a dropped piece takes to settle into its cells (SPEC.md §6). */
+/** How long a dropped piece takes to settle into its cells (specs/2026-09-25-single-player/SPEC.md §6). */
 export const SETTLE_MS = 120;
 /** How long a piece takes to fly back to where it came from. */
 export const RETURN_MS = 200;
@@ -94,7 +94,7 @@ const sameOrientation = (a: Orientation, b: Orientation) => a.rot === b.rot && a
 const snapKey = (s: Snap | null) => (s ? `${s.row},${s.col},${s.origin !== null}` : '');
 
 /**
- * Drag and drop for the play screen (SPEC.md §6). Tracks one primary-pointer gesture at a time.
+ * Drag and drop for the play screen (specs/2026-09-25-single-player/SPEC.md §6). Tracks one primary-pointer gesture at a time.
  * A press released within `TAP_SLOP_PX` of where it went down is a tap; beyond that the piece
  * floats under the pointer (moved by a CSS transform on `floatingRef`, not React state), the
  * board shows a snap preview, and the drop places it, returns it to where it came from, or sends
@@ -324,7 +324,7 @@ export function useDrag({ round, active, dispatch, onTrayTap }: DragOptions) {
     };
 
     /**
-     * Ends the press: a tap selects a tray piece; a drag is dropped by the rules in SPEC.md §6,
+     * Ends the press: a tap selects a tray piece; a drag is dropped by the rules in specs/2026-09-25-single-player/SPEC.md §6,
      * re-checked against the round as it is now.
      */
     const onUp = (event: PointerEvent) => {
@@ -358,7 +358,7 @@ export function useDrag({ round, active, dispatch, onTrayTap }: DragOptions) {
         returnToTray(g.piece);
       } else if (target.origin !== null) {
         // Valid: place now (so the round is up to date), then let the floating piece settle.
-        // Stamped with the drop's time: the drop that fills the grid stops the clock (SPEC.md §7).
+        // Stamped with the drop's time: the drop that fills the grid stops the clock (specs/2026-09-25-single-player/SPEC.md §7).
         latest.current.dispatch({
           type: 'place',
           piece: g.piece,

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import styles from './Controls.module.css';
 
-/** How long "Tap again to skip" waits for the second tap (SPEC.md §5). */
+/** How long "Tap again to skip" waits for the second tap (specs/2026-09-25-single-player/SPEC.md §5). */
 export const SKIP_CONFIRM_MS = 3000;
 
 type ControlsProps = {
@@ -16,7 +16,7 @@ type ControlsProps = {
 };
 
 /**
- * The play screen's four buttons (SPEC.md §5): Rotate and Flip act on the selected tray piece,
+ * The play screen's four buttons (specs/2026-09-25-single-player/SPEC.md §5): Rotate and Flip act on the selected tray piece,
  * Clear returns placed pieces to the tray, and New grid skips to another grid. Once any piece is
  * placed, New grid needs a second tap within {@link SKIP_CONFIRM_MS} to avoid accidental skips.
  */

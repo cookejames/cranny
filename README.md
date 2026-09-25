@@ -51,7 +51,7 @@ The repository is a pnpm workspace:
 - **`apps/web`** is the React app.
 - **`infra`** is the Terraform for hosting.
 
-[SPEC.md](SPEC.md) has the full design and [TASKS.md](TASKS.md) the build plan.
+The [single-player spec](specs/2026-09-25-single-player/SPEC.md) has the full design and its [task list](specs/2026-09-25-single-player/TASKS.md) the build plan.
 
 ## Deploying
 

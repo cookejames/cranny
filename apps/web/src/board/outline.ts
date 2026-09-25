@@ -1,5 +1,5 @@
 /**
- * Outline paths for pieces drawn as one merged shape (SPEC.md §9).
+ * Outline paths for pieces drawn as one merged shape (specs/2026-09-25-single-player/SPEC.md §9).
  *
  * Units: a cell is 1×1 and cells are separated by a gap of `gap` units, so a grid of n cells spans
  * `n + (n - 1) * gap`. Within a piece the gaps between its own cells are filled in, so the piece

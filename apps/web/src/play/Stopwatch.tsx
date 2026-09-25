@@ -14,7 +14,7 @@ type StopwatchProps = {
 };
 
 /**
- * The wall-clock stopwatch (SPEC.md §7): `Date.now() - startedAt`, so it stays right across a
+ * The wall-clock stopwatch (specs/2026-09-25-single-player/SPEC.md §7): `Date.now() - startedAt`, so it stays right across a
  * hidden tab, a locked phone or a reload. Only this component re-renders as it ticks.
  */
 export function Stopwatch({ startedAt, finishedAt, className }: StopwatchProps) {

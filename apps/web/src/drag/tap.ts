@@ -1,4 +1,4 @@
-/** A pointer that moves less than this between down and up is a tap, not a drag (SPEC.md §6). */
+/** A pointer that moves less than this between down and up is a tap, not a drag (specs/2026-09-25-single-player/SPEC.md §6). */
 export const TAP_SLOP_PX = 6;
 
 /** A point in client (viewport) coordinates. */

@@ -21,7 +21,7 @@ import styles from './PlayScreen.module.css';
 import { Results } from './Results.tsx';
 import { Tray } from './Tray.tsx';
 
-/** How long the completion celebration plays before Results (SPEC.md §5). */
+/** How long the completion celebration plays before Results (specs/2026-09-25-single-player/SPEC.md §5). */
 export const CELEBRATION_MS = 700;
 /** The celebration's length with `prefers-reduced-motion`: a simple fade. */
 export const REDUCED_CELEBRATION_MS = 200;
@@ -43,7 +43,7 @@ type PlayScreenProps = {
 
 /**
  * Initial round state: generates the grid (which runs the solver, so it happens once per screen,
- * not per render), then resumes this grid's saved round if there is one (SPEC.md §5).
+ * not per render), then resumes this grid's saved round if there is one (specs/2026-09-25-single-player/SPEC.md §5).
  */
 function initialRound({
   version,
@@ -73,7 +73,7 @@ const prefersReducedMotion = () =>
   typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
- * The play screen for one grid (SPEC.md §5). Before Start the board is hidden under a Start
+ * The play screen for one grid (specs/2026-09-25-single-player/SPEC.md §5). Before Start the board is hidden under a Start
  * button; Start reveals it and starts the clock. Pieces are selected, rotated and flipped in the
  * tray and dragged on and off the board (`useDrag`). The drop that fills the grid stops the
  * clock and records the solve in the stats, plays the celebration, then shows Results. The round is saved after every change, so a
@@ -105,7 +105,7 @@ export function PlayScreen({ version, seed, code, shared, startSolved = false }:
     onTrayPointerDown,
   } = useDrag({ round, active: round.status === 'playing', dispatch, onTrayTap: select });
 
-  // Keep one round in progress (SPEC.md §5): this one while it's played, none once it's done.
+  // Keep one round in progress (specs/2026-09-25-single-player/SPEC.md §5): this one while it's played, none once it's done.
   // Just opening a different grid discards another grid's round.
   useEffect(() => {
     if (round.status === 'playing' && round.startedAt !== null) {

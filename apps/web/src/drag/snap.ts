@@ -12,7 +12,7 @@ import { CELL_GAP, BOARD_SPAN } from '../board/metrics.ts';
 import type { ClientPoint } from './tap.ts';
 
 /**
- * Drag-and-drop maths (SPEC.md §6), kept free of the DOM so it can be unit tested. Positions are
+ * Drag-and-drop maths (specs/2026-09-25-single-player/SPEC.md §6), kept free of the DOM so it can be unit tested. Positions are
  * client (viewport) pixels unless stated otherwise.
  */
 
@@ -153,7 +153,7 @@ const onBoard = (row: number, col: number) =>
   row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE;
 
 /**
- * Snaps a floating piece to the board (SPEC.md §6): rounds its top-left to the nearest cell and
+ * Snaps a floating piece to the board (specs/2026-09-25-single-player/SPEC.md §6): rounds its top-left to the nearest cell and
  * checks whether it can be placed there.
  *
  * @param state - The board. When moving a placed piece, its current cells count as free.

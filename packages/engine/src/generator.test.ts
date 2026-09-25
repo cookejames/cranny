@@ -6,7 +6,7 @@ import { solve } from './solver.ts';
 /**
  * Golden seeds for generator v1. These must NEVER change: share links depend on them.
  * If a change to the PRNG, the draw, the piece set or the solver breaks this test, the change
- * needs a new generator version instead (SPEC.md §4).
+ * needs a new generator version instead (specs/2026-09-25-single-player/SPEC.md §4).
  */
 const GOLDEN_V1: Array<[seed: number, blocked: number[]]> = [
   [0, [0, 1, 7, 9, 18, 21, 24]],

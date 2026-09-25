@@ -15,7 +15,7 @@ import {
 } from '@cranny/engine';
 
 /**
- * Where a round is (SPEC.md §5): before Start the board is hidden and nothing can be played;
+ * Where a round is (specs/2026-09-25-single-player/SPEC.md §5): before Start the board is hidden and nothing can be played;
  * `complete` is reached by the drop that fills the grid and is final.
  */
 export type RoundStatus = 'pre-start' | 'playing' | 'complete';
@@ -26,7 +26,7 @@ export type RoundState = {
   board: BoardState;
   /** Orientation of every piece, whether in the tray or on the board. */
   orientations: Record<PieceId, Orientation>;
-  /** The tray piece that Rotate and Flip act on (SPEC.md §6). Never a placed piece. */
+  /** The tray piece that Rotate and Flip act on (specs/2026-09-25-single-player/SPEC.md §6). Never a placed piece. */
   selected: PieceId | null;
   /** When Start was pressed; null before. */
   startedAt: number | null;
@@ -153,7 +153,7 @@ export function roundReducer(state: RoundState, action: RoundAction): RoundState
       if (!canPlace(state.board, action.piece, placement)) return state;
       const board = place(state.board, action.piece, placement);
       const selected = state.selected === action.piece ? null : state.selected;
-      // The drop that fills the grid stops the clock at that moment (SPEC.md §7).
+      // The drop that fills the grid stops the clock at that moment (specs/2026-09-25-single-player/SPEC.md §7).
       return isSolved(board)
         ? { ...state, board, selected: null, status: 'complete', finishedAt: action.at }
         : { ...state, board, selected };

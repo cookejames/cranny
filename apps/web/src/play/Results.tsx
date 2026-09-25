@@ -29,7 +29,7 @@ const SHARE_TOASTS: Partial<Record<Awaited<ReturnType<typeof shareGrid>>, string
 };
 
 /**
- * The Results view after a solve (SPEC.md §5, `design/Complete.dc.html`): the final time, a
+ * The Results view after a solve (specs/2026-09-25-single-player/SPEC.md §5, `design/Complete.dc.html`): the final time, a
  * personal-best flag, the solved board, stats cards, and Next grid, Share grid and Home.
  */
 export function Results({ code, shared, board, outcome, onNextGrid }: ResultsProps) {

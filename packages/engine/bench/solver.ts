@@ -1,4 +1,4 @@
-// Solver timing benchmark for the SPEC.md §4 budget (worst case under 50 ms on a mid-range phone).
+// Solver timing benchmark for the specs/2026-09-25-single-player/SPEC.md §4 budget (worst case under 50 ms on a mid-range phone).
 // Run with `pnpm --filter @cranny/engine bench`. Plain Node, not Vitest: Vitest's module runner
 // makes the solver ~2.5× slower, which would distort the numbers.
 import { BLOCKED_COUNT, CELL_COUNT, generateGrid, mulberry32, solve } from '../src/index.ts';

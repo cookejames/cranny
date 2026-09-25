@@ -8,7 +8,7 @@ Cranny is a puzzle game. Each round, place nine polyomino pieces on a 6×6 grid 
 
 Piece set (29 squares = 36 − 7 blocked, so a solved grid has no gaps): five 4-square pieces (I, O, T, S, L), two 3-square pieces (straight bar, corner), one domino, one single square. Pieces can be rotated and flipped.
 
-Build spec: see SPEC.md. Task list and progress: TASKS.md.
+Specs and task lists live under `specs/`. Each feature gets its own dated folder: `specs/<date>-<feature-name>/SPEC.md` and `TASKS.md`. The single-player build's spec and task list are at `specs/2026-09-25-single-player/`.
 
 ## Commands
 

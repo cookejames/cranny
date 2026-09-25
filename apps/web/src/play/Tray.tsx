@@ -21,7 +21,7 @@ type TrayProps = {
 };
 
 /**
- * The 3×3 tray of pieces in spec order (SPEC.md §5), each shown in its current orientation.
+ * The 3×3 tray of pieces in spec order (specs/2026-09-25-single-player/SPEC.md §5), each shown in its current orientation.
  * Placed pieces are faded and can't be selected.
  *
  * Pointer input is handed to `onPiecePointerDown`, which tells taps (select) from drags, so a

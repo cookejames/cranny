@@ -1,5 +1,5 @@
 /**
- * Formats a duration for display (SPEC.md §7): `m:ss`, or `h:mm:ss` from one hour. With
+ * Formats a duration for display (specs/2026-09-25-single-player/SPEC.md §7): `m:ss`, or `h:mm:ss` from one hour. With
  * `tenths`, adds tenths of a second (`m:ss.s`) for results. Rounds down, so a timer never shows
  * a second before it has passed. Negative input is treated as 0.
  */

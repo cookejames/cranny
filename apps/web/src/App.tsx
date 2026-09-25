@@ -3,7 +3,7 @@ import { GridPage } from './routes/GridPage.tsx';
 import { HomePage } from './routes/HomePage.tsx';
 import { PlayRedirect } from './routes/PlayRedirect.tsx';
 
-/** The app's routes (SPEC.md §5). Rendered inside a router, so tests can use a `MemoryRouter`. */
+/** The app's routes (specs/2026-09-25-single-player/SPEC.md §5). Rendered inside a router, so tests can use a `MemoryRouter`. */
 export function AppRoutes() {
   return (
     <Routes>

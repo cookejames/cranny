@@ -7,7 +7,7 @@ import { Stopwatch } from './Stopwatch.tsx';
 type PlayHeaderProps = {
   /** Canonical grid code, shown as "Grid <code>". */
   code: string;
-  /** True when the grid was opened from a link rather than dealt by Play (SPEC.md §5). */
+  /** True when the grid was opened from a link rather than dealt by Play (specs/2026-09-25-single-player/SPEC.md §5). */
   shared: boolean;
   /** When Start was pressed; null before. */
   startedAt: number | null;

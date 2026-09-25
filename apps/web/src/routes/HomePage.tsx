@@ -16,7 +16,7 @@ const boardStyle = {
 } as CSSProperties;
 
 /**
- * Home screen (SPEC.md §5, `design/Home.dc.html`): wordmark, tagline, a solved board, the
+ * Home screen (specs/2026-09-25-single-player/SPEC.md §5, `design/Home.dc.html`): wordmark, tagline, a solved board, the
  * player's stats once they have solved a grid, and Play. There's no Race card in v1.
  */
 export function HomePage() {

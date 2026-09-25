@@ -1,4 +1,4 @@
-// Self-hosted fonts (SPEC.md §9): only the weights the design uses, latin subset only.
+// Self-hosted fonts (specs/2026-09-25-single-player/SPEC.md §9): only the weights the design uses, latin subset only.
 import '@fontsource/bricolage-grotesque/latin-600.css';
 import '@fontsource/bricolage-grotesque/latin-800.css';
 import '@fontsource/instrument-sans/latin-400.css';

@@ -1,4 +1,4 @@
-// Cranny rules engine: pure TypeScript, no DOM or framework dependencies (SPEC.md §4).
+// Cranny rules engine: pure TypeScript, no DOM or framework dependencies (specs/2026-09-25-single-player/SPEC.md §4).
 export type {
   BoardState,
   Cell,

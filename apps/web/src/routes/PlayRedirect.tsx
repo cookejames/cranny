@@ -5,7 +5,7 @@ import type { DealtState } from './GridPage.tsx';
 
 /**
  * `/play`: picks a random seed and replaces the URL with `/g/<code>`, so every grid is shareable
- * and Back skips this route (SPEC.md §5). Router state marks the grid as dealt, not shared.
+ * and Back skips this route (specs/2026-09-25-single-player/SPEC.md §5). Router state marks the grid as dealt, not shared.
  */
 export function PlayRedirect() {
   // A state initialiser, not a plain call, so re-renders can't pick a different grid.
