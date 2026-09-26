@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppRoutes } from './App.tsx';
 import { RoomHarness, settle } from './multiplayer/harness.tsx';
 import { Results } from './play/Results.tsx';
-import { saveStats } from './storage/storage.ts';
+import { saveMultiplayerStats, saveStats } from './storage/storage.ts';
 
 /**
  * Automated accessibility checks (specs/2026-09-25-single-player/SPEC.md §10) with axe on every screen. jsdom has no layout, so
@@ -51,6 +51,13 @@ describe('accessibility', () => {
 
   it('Home, with stats', async () => {
     saveStats({ solved: 3, bestMs: 61_000, recentMs: [61_000, 70_000, 80_000] });
+    renderAt('/');
+    expect(await violations()).toEqual([]);
+  });
+
+  it('Home, with solo and multiplayer stats', async () => {
+    saveStats({ solved: 3, bestMs: 61_000, recentMs: [61_000, 70_000, 80_000] });
+    saveMultiplayerStats({ solved: 2, bestMs: 42_000, recentMs: [42_000, 50_000] });
     renderAt('/');
     expect(await violations()).toEqual([]);
   });

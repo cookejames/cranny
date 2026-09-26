@@ -1,6 +1,6 @@
 import { generateGrid, PIECE_IDS, solve } from '@cranny/engine';
 import type { LiveRound, PlayerId, RoomClient, RoomState } from '@cranny/multiplayer';
-import { useEffect, useReducer, useState } from 'react';
+import { useEffect, useReducer, useRef, useState } from 'react';
 import { formatTime } from '../game/formatTime.ts';
 import {
   elapsedMs,
@@ -11,6 +11,7 @@ import {
   type RoundAction,
   type RoundState,
 } from '../game/round.ts';
+import { recordSolve } from '../game/stats.ts';
 import { layoutVars, useViewport } from '../layout/AppFrame.tsx';
 import { computeLayout, stripHeight } from '../layout/layout.ts';
 import { PlayArea } from '../play/PlayArea.tsx';
@@ -18,7 +19,9 @@ import { CELEBRATION_MS, REDUCED_CELEBRATION_MS } from '../play/PlayScreen.tsx';
 import {
   clearMultiplayerRound,
   loadMultiplayerRound,
+  loadMultiplayerStats,
   saveMultiplayerRound,
+  saveMultiplayerStats,
 } from '../storage/storage.ts';
 import { ordinal } from './progress.ts';
 import { ProgressStrip } from './ProgressStrip.tsx';
@@ -170,7 +173,15 @@ export function RoomRound({
     if (round.status === 'playing' && !ended) client.reportProgress(number, placed);
   }, [client, number, placed, round.status, ended]);
 
-  // The drop that fills the grid finishes the round for this player.
+  // The drop that fills the grid finishes the round for this player, and counts once toward
+  // their multiplayer stats (specs/2026-09-26-multiplayer-stats/SPEC.md §2). A board restored
+  // already finished was counted before the reload; the ref stops a re-run counting it twice.
+  const recorded = useRef(start.finishedMs !== null);
+  useEffect(() => {
+    if (finishedMs === null || recorded.current) return;
+    recorded.current = true;
+    saveMultiplayerStats(recordSolve(loadMultiplayerStats(), finishedMs).stats);
+  }, [finishedMs]);
   useEffect(() => {
     if (finishedMs !== null && !ended) client.reportFinished(number, finishedMs);
   }, [client, number, finishedMs, ended]);

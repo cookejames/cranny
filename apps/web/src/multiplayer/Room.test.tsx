@@ -15,9 +15,12 @@ import { BOARD_SPAN, CELL_GAP } from '../board/metrics.ts';
 import { SETTLE_MS } from '../drag/useDrag.ts';
 import { CELEBRATION_MS } from '../play/PlayScreen.tsx';
 import {
+  EMPTY_STATS,
   loadMultiplayerPrefs,
   loadMultiplayerRound,
+  loadMultiplayerStats,
   loadSeat,
+  loadStats,
   saveMultiplayerRound,
   saveSeat,
 } from '../storage/storage.ts';
@@ -272,6 +275,8 @@ describe('a round', () => {
     expect(totals[0]).toHaveTextContent('Teal Otter');
     expect(totals[0]).toHaveTextContent('5 points');
     expect(screen.getByRole('button', { name: 'Play another' })).toBeInTheDocument();
+    // Not finishing doesn't count (specs/2026-09-26-multiplayer-stats/SPEC.md §2).
+    expect(loadMultiplayerStats()).toEqual(EMPTY_STATS);
   });
 
   it('lets a late joiner watch, and play from the next round', async () => {
@@ -319,7 +324,23 @@ describe('a round', () => {
     expect(b.view().room!.round.finishes.map((f) => f.id)).toEqual([self]);
     await settle(CELEBRATION_MS);
     expect(screen.getByRole('heading', { name: 'You finished 1st' })).toBeInTheDocument();
-    expect(loadMultiplayerRound()?.finishedMs).toEqual(expect.any(Number));
+    const { finishedMs } = loadMultiplayerRound()!;
+    expect(finishedMs).toEqual(expect.any(Number));
+    // The finish counts once toward the multiplayer stats, and not toward solo.
+    expect(loadMultiplayerStats()).toEqual({
+      solved: 1,
+      bestMs: finishedMs,
+      recentMs: [finishedMs],
+    });
+    expect(loadStats()).toEqual(EMPTY_STATS);
+
+    // Reloading during the close-out restores the finished board without counting it again.
+    cleanup();
+    await settle(1_000);
+    renderTab(`/m/${room}`);
+    await settle(1_000);
+    expect(screen.getByRole('heading', { name: 'You finished 1st' })).toBeInTheDocument();
+    expect(loadMultiplayerStats().solved).toBe(1);
   });
 });
 

@@ -3,6 +3,7 @@ import {
   EMPTY_STATS,
   MULTIPLAYER_PREFS_KEY,
   MULTIPLAYER_ROUND_KEY,
+  MULTIPLAYER_STATS_KEY,
   PLAYER_KEY,
   ROUND_KEY,
   SEAT_KEY,
@@ -12,12 +13,14 @@ import {
   clearSeat,
   loadMultiplayerPrefs,
   loadMultiplayerRound,
+  loadMultiplayerStats,
   loadPlayerName,
   loadRound,
   loadSeat,
   loadStats,
   saveMultiplayerPrefs,
   saveMultiplayerRound,
+  saveMultiplayerStats,
   savePlayerName,
   saveRound,
   saveSeat,
@@ -67,6 +70,41 @@ describe('stats', () => {
       JSON.stringify({ solved: 12, bestMs: 1, recentMs: Array.from({ length: 12 }, (_, i) => i) }),
     );
     expect(loadStats().recentMs).toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+  });
+});
+
+describe('multiplayer stats', () => {
+  it('returns empty stats when nothing is stored', () => {
+    expect(loadMultiplayerStats()).toEqual(EMPTY_STATS);
+  });
+
+  it('round-trips', () => {
+    const stats = { solved: 2, bestMs: 41_000, recentMs: [52_000, 41_000] };
+    expect(saveMultiplayerStats(stats)).toBe(true);
+    expect(loadMultiplayerStats()).toEqual(stats);
+  });
+
+  it('validates like the solo stats', () => {
+    localStorage.setItem(
+      MULTIPLAYER_STATS_KEY,
+      JSON.stringify({
+        solved: -1,
+        bestMs: 900,
+        recentMs: Array.from({ length: 12 }, (_, i) => i),
+      }),
+    );
+    expect(loadMultiplayerStats()).toEqual({
+      solved: 0,
+      bestMs: 900,
+      recentMs: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+    });
+  });
+
+  it('is kept apart from the solo stats', () => {
+    saveStats({ solved: 3, bestMs: 61_200, recentMs: [61_200] });
+    expect(loadMultiplayerStats()).toEqual(EMPTY_STATS);
+    saveMultiplayerStats({ solved: 1, bestMs: 41_000, recentMs: [41_000] });
+    expect(loadStats()).toEqual({ solved: 3, bestMs: 61_200, recentMs: [61_200] });
   });
 });
 
