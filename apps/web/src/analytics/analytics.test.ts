@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { savePlayerName } from '../storage/storage.ts';
 import { durationBucket, scrubProperties, scrubUrl } from './analytics.ts';
 
 const posthog = vi.hoisted(() => ({ init: vi.fn(), capture: vi.fn() }));
@@ -78,7 +79,7 @@ describe('track', () => {
     expect(posthog.capture).not.toHaveBeenCalled();
   });
 
-  it('starts PostHog cookieless once and sends each event', async () => {
+  it('starts PostHog cookieless once and sends each event, without a name if there is none', async () => {
     vi.stubEnv('VITE_POSTHOG_KEY', 'phc_test');
     const { track } = await freshAnalytics();
     track({ name: 'solo_round_started', shared: false });
@@ -95,6 +96,16 @@ describe('track', () => {
     );
     expect(posthog.capture).toHaveBeenNthCalledWith(1, 'solo_round_started', { shared: false });
     expect(posthog.capture).toHaveBeenNthCalledWith(2, 'install_clicked', { platform: 'ios' });
+  });
+
+  it('adds the player name when they have one', async () => {
+    vi.stubEnv('VITE_POSTHOG_KEY', 'phc_test');
+    savePlayerName('Quiet Otter');
+    const { track } = await freshAnalytics();
+    track({ name: 'mp_room_joined' });
+    await vi.waitFor(() =>
+      expect(posthog.capture).toHaveBeenCalledWith('mp_room_joined', { playerName: 'Quiet Otter' }),
+    );
   });
 
   it('never throws when PostHog does', async () => {

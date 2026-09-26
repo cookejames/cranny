@@ -1,8 +1,9 @@
 import type { PostHog, PostHogConfig } from 'posthog-js';
+import { knownPlayerName } from '../multiplayer/playerName.ts';
 
 // Cookieless usage analytics through PostHog (specs/2026-09-26-analytics/SPEC.md). Only the
-// events below are sent: no autocapture, no identifiers, nothing stored on the device, and room
-// and grid codes are scrubbed from URLs. `VITE_POSTHOG_KEY` is set for production builds only
+// events below are sent, each with the player's name if they have one (SPEC §2): no autocapture,
+// nothing stored on the device, and room and grid codes are scrubbed from URLs. `VITE_POSTHOG_KEY` is set for production builds only
 // (`.env.production`); without it every function here does nothing. posthog-js is loaded with a
 // dynamic import once the browser is idle, so it stays out of the main bundle.
 
@@ -11,7 +12,7 @@ export type DurationBucket = '<1m' | '1-2m' | '2-5m' | '5-10m' | '10m+';
 
 /**
  * Every event the app sends. A new feature to count gets a member here; keep properties
- * low-cardinality and free of anything that identifies a player, a room or a grid.
+ * low-cardinality and free of room names and grid codes. `track` adds the player's name.
  */
 export type AnalyticsEvent =
   | { name: 'solo_round_started'; shared: boolean }
@@ -127,10 +128,15 @@ export function startAnalytics(): void {
   else setTimeout(() => void load(), 0);
 }
 
-/** Sends one event, loading posthog-js first if need be. Never throws; a no-op when off. */
+/**
+ * Sends one event, with the player's name as `playerName` when they have one, loading posthog-js
+ * first if need be. Never throws; a no-op when off.
+ */
 export function track(event: AnalyticsEvent): void {
   if (!analyticsEnabled) return;
-  const { name, ...properties } = event;
+  const { name, ...fields } = event;
+  const playerName = knownPlayerName();
+  const properties = playerName === null ? fields : { ...fields, playerName };
   void load().then((posthog) => {
     try {
       posthog?.capture(name, properties);

@@ -14,4 +14,6 @@
       _Result:_ set with `posthog-cli` at the user's request: cookieless server hash mode Stateful (2), session recording off.
 - [x] **T1.8 Bootstrap apply** (by hand): `terraform -chdir=infra/bootstrap apply` before the PR merges, so CI can create the CloudFront Function.
       _Result:_ applied; only the two CI policies changed.
+- [x] **T1.10 Player name on events** (§2), at the user's request, knowing it makes the events personal data.
+- [ ] **T1.11 Privacy notice** (§2): say on the site what's collected (events with the player's name), why, and that PostHog (EU) processes it.
 - [ ] **T1.9 After deploy**: play a solo and a multiplayer round in production, and check the events arrive in PostHog with scrubbed URLs.

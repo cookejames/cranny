@@ -2,19 +2,20 @@
 
 ## 1. Summary
 
-Count how often Cranny is played, solo and multiplayer, and which features are used, without cookies, device storage or anything that identifies a player. Events go to PostHog (EU cloud, free tier) through a reverse proxy on Cranny's own domain.
+Count how often Cranny is played, solo and multiplayer, and which features are used, without cookies or device storage. Events carry the player's name when they have one. Events go to PostHog (EU cloud, free tier) through a reverse proxy on Cranny's own domain.
 
 ### Out of scope
 
-Session recording, autocapture, heatmaps, error tracking, feature flags, surveys, and identifying players.
+Session recording, autocapture, heatmaps, error tracking, feature flags, surveys, and person profiles.
 
 ## 2. Privacy
 
 - **Cookieless** (`cookieless_mode: 'always'`): PostHog stores nothing on the device (no cookies, no local or session storage). Its server counts visitors with a hash of IP, user agent and a salt that changes daily, so a visitor can't be followed from one day to the next. The project must have **Cookieless server hash mode** switched on (Project settings → Web analytics), or ingestion drops the events.
 - `person_profiles: 'never'`: no person profiles, and `identify()` does nothing.
 - URLs are scrubbed before sending (`before_send`): room names become `/m/:room` (a room name is enough to join the room), grid codes `/g/:code`, and query strings and fragments are dropped. This applies to every property whose name contains `url`, `pathname` or `referrer`.
-- Event properties are low-cardinality and never name a player, room or grid.
-- No consent banner is needed: nothing is stored on the device, and nothing identifies a person.
+- **Player name**: every event carries `playerName`, the name the player chose or was given for multiplayer (`knownPlayerName` in `src/multiplayer/playerName.ts`: this session's name, else the remembered one). It's left out for someone who has never had a name; a solo player isn't given a random one just for analytics. The user chose this knowing it makes the events personal data: names are free text, often a real name, and link a player's events across days, which the cookieless hash otherwise prevents.
+- Other event properties are low-cardinality and never name a room or grid.
+- No cookie banner is needed (nothing is stored on the device), but because events carry names, **the site needs a privacy notice** saying what's collected, why, and that PostHog (EU) processes it.
 
 ## 3. Transport
 
