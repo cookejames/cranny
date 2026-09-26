@@ -34,4 +34,4 @@
 
 - [ ] **T3.1 PR.** This PR changes `infra/`: CI passes and the plan comment appears with no `AccessDenied` and no changes. A second push updates that comment rather than adding one. (Done except the second push: every plan so far posted its first comment.)
 - [x] **T3.2 Merge.** `deploy.yml`: checks, "No infrastructure changes.", `deploy.sh`, smoke test, all green; the site serves the merged commit. (The first deploy failed to release the state lock, fixed in PR #9; the deploy of that merge passed.)
-- [ ] **T3.3 No plan without infra.** A PR that touches neither `infra/` nor `apps/web/security-headers.json` gets CI but no plan run.
+- [x] **T3.3 No plan without infra.** A PR that touches neither `infra/` nor `apps/web/security-headers.json` gets CI but no plan run. (PR #10: `checks` only, and required.)
