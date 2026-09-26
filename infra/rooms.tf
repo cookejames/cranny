@@ -2,17 +2,23 @@
 # behind an HTTP API, reached through CloudFront as /api/rooms/* so it's same-origin. It keeps no
 # state, so there is no database.
 
-# The Ably API key. Terraform owns the parameter but never its value, so the key stays out of
-# state: set it once, and after rotating the key, with
+# The Ably API key is a SecureString parameter that Terraform doesn't manage. Managing it, even
+# with the value ignored, reads the key into state on every refresh, where anyone who can plan
+# could read it (specs/2026-09-26-ci-deploy/SPEC.md §2). Create it, and set it again after
+# rotating the key, with
 #   aws ssm put-parameter --name /cranny/ably-key --type SecureString --overwrite --value '<key>'
-resource "aws_ssm_parameter" "ably_key" {
-  name        = "/cranny/ably-key"
-  description = "Ably API key for the rooms API: room:* with publish, subscribe, presence and channel-metadata."
-  type        = "SecureString"
-  value       = "unset"
+locals {
+  ably_key_parameter = "/cranny/ably-key"
+  ably_key_arn       = "arn:aws:ssm:${var.region}:${data.aws_caller_identity.current.account_id}:parameter${local.ably_key_parameter}"
+}
+
+# Terraform used to manage the parameter: forget it without deleting it. Remove this block once
+# every copy of the state has been applied with it.
+removed {
+  from = aws_ssm_parameter.ably_key
 
   lifecycle {
-    ignore_changes = [value]
+    destroy = false
   }
 }
 
@@ -36,7 +42,7 @@ data "aws_iam_policy_document" "rooms_assume" {
 data "aws_iam_policy_document" "rooms" {
   statement {
     actions   = ["ssm:GetParameter"]
-    resources = [aws_ssm_parameter.ably_key.arn]
+    resources = [local.ably_key_arn]
   }
   statement {
     actions   = ["logs:CreateLogStream", "logs:PutLogEvents"]
@@ -44,9 +50,14 @@ data "aws_iam_policy_document" "rooms" {
   }
 }
 
+data "aws_caller_identity" "current" {}
+
+# The boundary is created by infra/bootstrap/ci.tf, outside CI's reach: CI may edit this role's
+# policy, but never beyond the boundary (specs/2026-09-26-ci-deploy/SPEC.md §2).
 resource "aws_iam_role" "rooms" {
-  name               = "cranny-rooms"
-  assume_role_policy = data.aws_iam_policy_document.rooms_assume.json
+  name                 = "cranny-rooms"
+  assume_role_policy   = data.aws_iam_policy_document.rooms_assume.json
+  permissions_boundary = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/cranny-rooms-boundary"
 }
 
 resource "aws_iam_role_policy" "rooms" {
@@ -78,7 +89,7 @@ resource "aws_lambda_function" "rooms" {
 
   environment {
     variables = {
-      ABLY_KEY_PARAMETER = aws_ssm_parameter.ably_key.name
+      ABLY_KEY_PARAMETER = local.ably_key_parameter
       NODE_OPTIONS       = "--enable-source-maps"
     }
   }

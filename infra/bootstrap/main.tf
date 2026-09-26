@@ -1,6 +1,7 @@
-# One-time setup: the S3 bucket that holds the main configuration's Terraform state (SPEC.md §11).
-# Its own state is local (terraform.tfstate here, git-ignored): it manages only this bucket, which
-# can be re-imported if the file is lost. Run it once, before `terraform init` in infra/:
+# Set up by hand: the S3 bucket that holds the main configuration's Terraform state (SPEC.md §11),
+# and GitHub Actions' roles (ci.tf). Its own state is local (terraform.tfstate here, git-ignored):
+# everything it manages can be re-imported if the file is lost. Run it before `terraform init` in
+# infra/, and again whenever ci.tf changes:
 #
 #   terraform -chdir=infra/bootstrap init
 #   terraform -chdir=infra/bootstrap apply
