@@ -129,6 +129,7 @@ Visual reference: `design/` (Home, Main, Complete). The Race screen is not built
 - A primary **Play** button (goes to `/play`).
 - A stats row with Best, Average and Solved (§8), hidden until there is at least one solve.
 - No Race or multiplayer card at all.
+- On phones the stats and Play sit at the bottom of the screen, in thumb reach. On desktops (a mouse pointer) they follow the board directly, with the spare height below them; the page stays top-aligned.
 
 ### Play screen: pre-start
 
