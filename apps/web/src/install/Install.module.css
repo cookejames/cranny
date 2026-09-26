@@ -1,0 +1,98 @@
+/* The Install app button on Home, and the iOS instructions dialog (installable SPEC §5). */
+
+/* 44 px tall: HomePage.tsx leaves room for it under the board (--install-space). */
+.button {
+  flex-shrink: 0;
+  height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: var(--color-muted);
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.button svg,
+.shareIcon {
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.button:focus-visible,
+.done:focus-visible {
+  outline: 3px solid var(--piece-i4);
+  outline-offset: 2px;
+}
+
+.dialog {
+  width: min(360px, calc(100vw - 32px));
+  padding: 0;
+  border: 0;
+  border-radius: 18px;
+  background: var(--color-ground);
+  color: var(--color-ink);
+  box-shadow: 0 20px 50px rgb(0 0 0 / 0.3);
+}
+
+.dialog::backdrop {
+  background: rgb(29 27 24 / 0.5);
+}
+
+.dialogBody {
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dialogTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.steps {
+  margin: 0;
+  padding-left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.shareIcon {
+  margin: 0 4px;
+  vertical-align: -4px;
+}
+
+.dialogNote {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--color-muted);
+}
+
+.done {
+  margin-top: 6px;
+  height: 48px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--color-ink);
+  color: var(--color-ground);
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}

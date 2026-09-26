@@ -24,6 +24,16 @@ Cranny is a quick brain-teaser for your phone or browser. Each grid is a 6×6 bo
 
 The pieces are five four-square blocks (Long bar, Square, Tee, Zig and Ell), two three-square blocks (Bar and Corner), a Domino and a Single.
 
+### Install it
+
+Cranny can live on your home screen like an app, opening full-screen with its own icon.
+
+- **iPhone and iPad:** in Safari, tap **Install app** on the home screen for the steps: **Share**, then **Add to Home Screen**. The installed app keeps its own stats, separate from Safari's.
+- **Android:** tap **Install app** on the home screen.
+- **Desktop:** Chrome and Edge show an install icon in the address bar.
+
+The app still needs a connection, and always opens the latest version.
+
 ## Multiplayer
 
 Play the same grids as your friends, at the same time, from **Multiplayer** on the home screen.

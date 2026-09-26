@@ -7,7 +7,7 @@ Players can install Cranny to their phone's home screen or their desktop, and it
 ### In scope
 
 - A web app manifest, a letter-mark icon in every size the platforms need, a favicon, and the iOS meta tags.
-- An **Install app** button on Home: the browser's own install dialog on Chrome, Edge and Android, and "Add to Home Screen" instructions on iOS and iPadOS Safari. It is hidden once the app is installed, or when running as the installed app.
+- An **Install app** button on Home, on phones and tablets only: the browser's own install dialog on Android (Chrome, Edge, Samsung Internet), and "Add to Home Screen" instructions on iOS and iPadOS Safari. It is hidden on desktops, once the app is installed, and when running as the installed app. Desktop Chrome and Edge still offer the install from their own address-bar icon.
 - The CSP and deploy changes the manifest needs.
 
 ### Out of scope, possibly later
@@ -73,20 +73,20 @@ Files, all in `apps/web/public/` so Vite copies them to the root of the build un
 
 ## 5. Install button (Home)
 
-A small secondary button, **Install app**, below the Play and Multiplayer buttons, shown only when installing is possible:
+A small secondary button, **Install app**, just under the decorative board (above the stats, Play and Multiplayer), shown only when installing is possible:
 
-| Where                                                        | What the button does                                                                                                                                 |
-| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Chrome, Edge (desktop and Android), Samsung Internet         | Shown once the browser fires `beforeinstallprompt`. Opens the browser's own install dialog (`prompt()`). Hidden after the player accepts it.         |
-| Safari on iPhone and iPad (not yet installed)                | Always shown. Opens a dialog: "Tap **Share**, then **Add to Home Screen**", with the Share icon, and the note that the app keeps its own stats (§2). |
-| Already running as the installed app                         | Hidden (`display-mode: standalone`, or `navigator.standalone` on iOS).                                                                               |
-| Anything else (Firefox, desktop Safari, iOS in-app browsers) | Hidden: they have no install we can trigger, or their own menu covers it.                                                                            |
+| Where                                                                             | What the button does                                                                                                                                                                      |
+| --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Android: Chrome, Edge, Samsung Internet                                           | Shown once the browser fires `beforeinstallprompt`. Opens the browser's own install dialog (`prompt()`). Hidden after the player accepts it.                                              |
+| Safari on iPhone and iPad (not yet installed)                                     | Always shown. Opens a dialog: "Tap **Share** (in Safari's toolbar, or its ⋯ menu), then **Add to Home Screen**", with the Share icon, and the note that the app keeps its own stats (§2). |
+| Already running as the installed app                                              | Hidden (`display-mode: standalone`, or `navigator.standalone` on iOS).                                                                                                                    |
+| Desktops (Chrome, Edge, Firefox, Safari), and anything else (iOS in-app browsers) | Hidden (the user's decision). On a desktop the app doesn't hold `beforeinstallprompt`, so Chrome and Edge keep their own install icon in the address bar.                                 |
 
-- `beforeinstallprompt` can fire before React mounts, so a small module (`src/install/install.ts`) listens from `main.tsx` at startup, calls `preventDefault()` to hold the event for the button, and exposes it through `useSyncExternalStore`. It also listens for `appinstalled` to hide the button.
+- `beforeinstallprompt` can fire before React mounts, so a small module (`src/install/install.ts`) listens from `main.tsx` at startup and, on Android (`Android` in the user agent), calls `preventDefault()` to hold the event for the button, and exposes it through `useSyncExternalStore`. It also listens for `appinstalled` to hide the button.
 - iOS Safari is detected from the user agent (iPhone, iPad, or a Mac with touch, since iPadOS reports itself as a Mac), excluding in-app browsers (`CriOS`, `FxiOS`, `EdgiOS` and similar), which can't add to the home screen themselves on older iOS. This is the one place the app sniffs the user agent, and it only decides whether to show a hint.
 - If the player dismisses the browser's install dialog, the event can't be reused. The button hides until the browser fires a new one, as it does on a later visit.
 - No "don't show again" setting: the button is quiet, and players who don't want it can ignore it.
-- **Layout:** Home must still fit an iPhone SE with the button showing (on iOS Safari it always shows). If it doesn't, the decorative board shrinks further when the button is present, as it already does for Multiplayer.
+- **Layout:** Home must still fit an iPhone SE with the button showing (on iOS Safari it always shows). The decorative board takes whatever height the rest of Home leaves, less the button's 48 px when it shows (a size container; the board is between 120 and 300 px), so it fits with any mix of stats, Multiplayer and Install app.
 - The instructions dialog uses the same `<dialog>` pattern as the multiplayer leave dialog (`LeaveDialog.tsx`), with focus handling and Escape to close.
 
 ## 6. Security headers and hosting
@@ -115,4 +115,4 @@ A small secondary button, **Install app**, below the Play and Multiplayer button
 
 ## 9. Decisions log
 
-Installable but online only, with no service worker or offline play · updates arrive silently on the next launch (automatic, since `index.html` is `no-cache`) · letter-mark icon, a capital C in the display font · an Install app button on Home, using the browser's dialog where available and instructions on iOS Safari, hidden once installed · no Terraform file changes (the CSP change needs an apply).
+Installable but online only, with no service worker or offline play · updates arrive silently on the next launch (automatic, since `index.html` is `no-cache`) · letter-mark icon, a capital C in the display font · an Install app button on Home, on Android and iOS only (not desktops), using the browser's dialog on Android and instructions on iOS Safari, hidden once installed · no Terraform file changes (the CSP change needs an apply).

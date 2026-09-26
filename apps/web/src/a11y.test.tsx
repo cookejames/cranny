@@ -45,10 +45,25 @@ describe('accessibility', () => {
     document.documentElement.lang = 'en';
     document.title = 'Cranny';
   });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it('Home, with stats', async () => {
     saveStats({ solved: 3, bestMs: 61_000, recentMs: [61_000, 70_000, 80_000] });
     renderAt('/');
+    expect(await violations()).toEqual([]);
+  });
+
+  it('Home, with Install app and its iOS instructions open', async () => {
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1',
+    );
+    renderAt('/');
+    const button = screen.getByRole('button', { name: 'Install app' });
+    expect(await violations()).toEqual([]);
+    fireEvent.click(button);
+    expect(screen.getByRole('dialog', { name: 'Install Cranny' })).toBeInTheDocument();
     expect(await violations()).toEqual([]);
   });
 
