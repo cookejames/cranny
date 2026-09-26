@@ -11,10 +11,13 @@
 # Neither role can read the Ably key: infra/ doesn't manage its parameter, so plans never read it
 # and it isn't in state. Keep it that way.
 
-variable "github_repository" {
-  description = "The repository whose workflows may assume the CI roles, as owner/name."
+# The repository uses GitHub's immutable subject claims, which carry the owner's and repository's
+# IDs, so a deleted and re-created repository of the same name can't match. Check the prefix with
+#   gh api repos/cookejames/cranny/actions/oidc/customization/sub
+variable "github_subject_prefix" {
+  description = "The start of the OIDC sub claim for the repository whose workflows may assume the CI roles."
   type        = string
-  default     = "cookejames/cranny"
+  default     = "repo:cookejames@2211370/cranny@1386290316"
 }
 
 variable "zone_name" {
@@ -58,8 +61,8 @@ resource "aws_iam_openid_connect_provider" "github" {
 # Trust for one kind of workflow run: `subject` is the token's sub claim.
 data "aws_iam_policy_document" "ci_trust" {
   for_each = {
-    deploy = "repo:${var.github_repository}:environment:production"
-    plan   = "repo:${var.github_repository}:pull_request"
+    deploy = "${var.github_subject_prefix}:environment:production"
+    plan   = "${var.github_subject_prefix}:pull_request"
   }
 
   statement {

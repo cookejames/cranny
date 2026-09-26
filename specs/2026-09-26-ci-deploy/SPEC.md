@@ -17,12 +17,12 @@ This amends the single-player spec (`specs/2026-09-25-single-player/SPEC.md`) §
 
 ## 2. AWS access
 
-Workflows reach AWS through GitHub's OIDC provider, so there are no long-lived keys. Two roles, both defined in `infra/bootstrap/ci.tf`:
+Workflows reach AWS through GitHub's OIDC provider, so there are no long-lived keys. Two roles, both defined in `infra/bootstrap/ci.tf`. The repository issues GitHub's immutable subject claims, which carry the owner's and repository's IDs (`repo:cookejames@2211370/cranny@1386290316`, shortened to `<repo>` below), so a deleted and re-created repository of the same name can't assume the roles:
 
-| Role               | Assumed by           | Trust (`sub` claim)                             | Policies                             |
-| ------------------ | -------------------- | ----------------------------------------------- | ------------------------------------ |
-| `cranny-ci-deploy` | `deploy.yml`         | `repo:cookejames/cranny:environment:production` | `cranny-ci-read`, `cranny-ci-deploy` |
-| `cranny-ci-plan`   | `terraform-plan.yml` | `repo:cookejames/cranny:pull_request`           | `cranny-ci-read`                     |
+| Role               | Assumed by           | Trust (`sub` claim)             | Policies                             |
+| ------------------ | -------------------- | ------------------------------- | ------------------------------------ |
+| `cranny-ci-deploy` | `deploy.yml`         | `<repo>:environment:production` | `cranny-ci-read`, `cranny-ci-deploy` |
+| `cranny-ci-plan`   | `terraform-plan.yml` | `<repo>:pull_request`           | `cranny-ci-read`                     |
 
 **Least privilege.** Neither role has AdministratorAccess or ReadOnlyAccess. `cranny-ci-read` lists what `terraform plan` reads to refresh `infra/`'s resources; `cranny-ci-deploy` adds what `terraform apply` and `deploy.sh` change. Every action is listed, and scoped to Cranny's resources where the service allows it: the state object, the `cranny-site-*` bucket, the `cranny-rooms` function, role and log group, and Route 53 changes only to `cranny.cooke.ing` and its certificate-validation records. CloudFront, ACM and API Gateway name resources by generated IDs, so those are scoped to their resource type in the account.
 
