@@ -15,7 +15,7 @@ Session recording, autocapture, heatmaps, error tracking, feature flags, surveys
 - URLs are scrubbed before sending (`before_send`): room names become `/m/:room` (a room name is enough to join the room), grid codes `/g/:code`, and query strings and fragments are dropped. This applies to every property whose name contains `url`, `pathname` or `referrer`.
 - **Player name**: every event carries `playerName`, the name the player chose or was given for multiplayer (`knownPlayerName` in `src/multiplayer/playerName.ts`: this session's name, else the remembered one). It's left out for someone who has never had a name; a solo player isn't given a random one just for analytics. The user chose this knowing it makes the events personal data: names are free text, often a real name, and link a player's events across days, which the cookieless hash otherwise prevents.
 - Other event properties are low-cardinality and never name a room or grid.
-- No cookie banner is needed (nothing is stored on the device), but because events carry names, **the site needs a privacy notice** saying what's collected, why, and that PostHog (EU) processes it.
+- No cookie banner is needed: nothing is stored on the device. There's no privacy notice either, by the user's decision.
 
 ## 3. Transport
 
