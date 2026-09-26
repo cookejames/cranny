@@ -73,7 +73,7 @@ Files, all in `apps/web/public/` so Vite copies them to the root of the build un
 
 ## 5. Install button (Home)
 
-A small secondary button, **Install app**, just under the decorative board (above the stats, Play and Multiplayer), shown only when installing is possible:
+A small icon button, named **Install app** (its `aria-label` and tooltip), at the end of the wordmark's line, shown only when installing is possible. It was first a text button just under the decorative board; it moved when Home gained multiplayer stats, to give the board back its height (specs/2026-09-26-multiplayer-stats/SPEC.md §4).
 
 | Where                                                                             | What the button does                                                                                                                                                                      |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -86,7 +86,7 @@ A small secondary button, **Install app**, just under the decorative board (abov
 - iOS Safari is detected from the user agent (iPhone, iPad, or a Mac with touch, since iPadOS reports itself as a Mac), excluding in-app browsers (`CriOS`, `FxiOS`, `EdgiOS` and similar), which can't add to the home screen themselves on older iOS. This is the one place the app sniffs the user agent, and it only decides whether to show a hint.
 - If the player dismisses the browser's install dialog, the event can't be reused. The button hides until the browser fires a new one, as it does on a later visit.
 - No "don't show again" setting: the button is quiet, and players who don't want it can ignore it.
-- **Layout:** Home must still fit an iPhone SE with the button showing (on iOS Safari it always shows). The decorative board takes whatever height the rest of Home leaves, less the button's 48 px when it shows (a size container; the board is between 120 and 300 px), so it fits with any mix of stats, Multiplayer and Install app.
+- **Layout:** Home must still fit an iPhone SE with the button showing (on iOS Safari it always shows). The button sits beside the 60 px wordmark, so it adds no height. The decorative board takes whatever height the rest of Home leaves (a size container; the board is between 120 and 300 px), so it fits with any mix of stats, Multiplayer and Install app.
 - The instructions dialog uses the same `<dialog>` pattern as the multiplayer leave dialog (`LeaveDialog.tsx`), with focus handling and Escape to close.
 
 ## 6. Security headers and hosting

@@ -79,11 +79,10 @@ export type Stats = { solved: number; bestMs: number | null; recentMs: number[] 
 export const EMPTY_STATS: Stats = { solved: 0, bestMs: null, recentMs: [] };
 
 /**
- * Stored stats, or {@link EMPTY_STATS} if there are none. Invalid fields are replaced with their
- * empty values individually, so one bad field doesn't wipe the rest.
+ * Stats read back from storage, or {@link EMPTY_STATS} if `raw` isn't a record. Invalid fields are
+ * replaced with their empty values individually, so one bad field doesn't wipe the rest.
  */
-export function loadStats(): Stats {
-  const raw = readJson(STATS_KEY);
+function parseStats(raw: unknown): Stats {
   if (!isRecord(raw)) return EMPTY_STATS;
   const solved =
     typeof raw.solved === 'number' && Number.isInteger(raw.solved) && raw.solved >= 0
@@ -96,9 +95,30 @@ export function loadStats(): Stats {
   return { solved, bestMs, recentMs };
 }
 
+/** Stored solo stats, or {@link EMPTY_STATS} if there are none (invalid fields as {@link parseStats}). */
+export function loadStats(): Stats {
+  return parseStats(readJson(STATS_KEY));
+}
+
 /** Saves stats. Returns false if they couldn't be stored. */
 export function saveStats(stats: Stats): boolean {
   return writeJson(STATS_KEY, stats);
+}
+
+/**
+ * Multiplayer finishes, kept apart from the solo stats (specs/2026-09-26-multiplayer-stats/SPEC.md §3).
+ * Local storage: they belong to the device, so every tab adds to them.
+ */
+export const MULTIPLAYER_STATS_KEY = 'cranny.multiplayerStats.v1';
+
+/** Stored multiplayer stats, or {@link EMPTY_STATS} if there are none (invalid fields as {@link parseStats}). */
+export function loadMultiplayerStats(): Stats {
+  return parseStats(readJson(MULTIPLAYER_STATS_KEY));
+}
+
+/** Saves the multiplayer stats. Returns false if they couldn't be stored. */
+export function saveMultiplayerStats(stats: Stats): boolean {
+  return writeJson(MULTIPLAYER_STATS_KEY, stats);
 }
 
 // ---------------------------------------------------------------------------------------------
