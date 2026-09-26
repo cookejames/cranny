@@ -28,9 +28,18 @@
   color: var(--color-muted);
 }
 
+/*
+ * Fills the height the other sections leave, which sizes the board inside it (HomePage.tsx), with
+ * the Install app button, when it shows, just under the board.
+ */
 .showcase {
+  flex: 1 1 0;
+  min-height: calc(120px + var(--install-space));
+  container-type: size;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
 }
 
 .bottom {

@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach } from 'vitest';
+import { install } from '../install/install.ts';
 import { resetPlayerName } from '../multiplayer/playerName.ts';
 
 // jsdom has `<dialog>` but not its modal methods: open and close it as a browser would.
@@ -21,4 +22,5 @@ afterEach(() => {
   localStorage.clear();
   sessionStorage.clear();
   resetPlayerName();
+  install.reset();
 });

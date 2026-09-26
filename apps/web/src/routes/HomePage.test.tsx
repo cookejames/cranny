@@ -1,6 +1,7 @@
-import { render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { BeforeInstallPromptEvent } from '../install/install.ts';
 import { saveStats } from '../storage/storage.ts';
 import { HomePage } from './HomePage.tsx';
 
@@ -44,5 +45,75 @@ describe('HomePage', () => {
     expect(stats).toHaveTextContent('Best1:01');
     expect(stats).toHaveTextContent('Average1:15');
     expect(stats).toHaveTextContent('Solved12');
+  });
+
+  describe('Install app', () => {
+    const ANDROID_CHROME =
+      'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36';
+    const IPHONE_SAFARI =
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1';
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+      Reflect.deleteProperty(navigator, 'standalone');
+    });
+
+    /** Fires a fake `beforeinstallprompt` whose dialog ends in `outcome`; returns its `prompt`. */
+    function offerInstall(outcome: 'accepted' | 'dismissed') {
+      const event = new Event('beforeinstallprompt', {
+        cancelable: true,
+      }) as BeforeInstallPromptEvent;
+      const prompt = vi.fn(() => Promise.resolve());
+      Object.assign(event, { prompt, userChoice: Promise.resolve({ outcome, platform: 'web' }) });
+      act(() => {
+        window.dispatchEvent(event);
+      });
+      return prompt;
+    }
+
+    const installButton = () => screen.queryByRole('button', { name: 'Install app' });
+
+    it('is hidden when the browser offers no install', () => {
+      renderHome();
+      expect(installButton()).not.toBeInTheDocument();
+    });
+
+    it('opens the browser’s install dialog once offered on Android, and hides after', async () => {
+      vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(ANDROID_CHROME);
+      renderHome();
+      const prompt = offerInstall('accepted');
+      fireEvent.click(installButton()!);
+      expect(prompt).toHaveBeenCalledTimes(1);
+      await act(async () => {});
+      expect(installButton()).not.toBeInTheDocument();
+    });
+
+    it('is hidden on a desktop, even when the browser offers an install', () => {
+      vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
+      );
+      renderHome();
+      offerInstall('accepted');
+      expect(installButton()).not.toBeInTheDocument();
+    });
+
+    it('shows Add to Home Screen instructions on iPhone Safari', () => {
+      vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(IPHONE_SAFARI);
+      renderHome();
+      fireEvent.click(installButton()!);
+      const dialog = screen.getByRole('dialog', { name: 'Install Cranny' });
+      expect(dialog).toHaveTextContent(/Tap Share.*Add to Home Screen/);
+      expect(dialog).toHaveTextContent('The app keeps its own stats');
+      fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it('is hidden when running as the installed app', () => {
+      vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(IPHONE_SAFARI);
+      Object.defineProperty(navigator, 'standalone', { value: true, configurable: true });
+      renderHome();
+      offerInstall('accepted');
+      expect(installButton()).not.toBeInTheDocument();
+    });
   });
 });
