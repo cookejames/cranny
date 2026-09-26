@@ -247,7 +247,7 @@
   color: var(--color-tile-selected);
 }
 
-.readyMark[data-away] {
+.readyMark[data-disconnected] {
   border-style: dashed;
   border-color: var(--color-muted);
   color: var(--color-muted);
@@ -261,7 +261,7 @@
   stroke-linejoin: round;
 }
 
-.readyMark[data-away] svg {
+.readyMark[data-disconnected] svg {
   stroke-width: 2.25;
 }
 
@@ -275,7 +275,7 @@
   font-weight: 600;
 }
 
-.player[data-away] .playerName {
+.player[data-disconnected] .playerName {
   color: var(--color-muted);
 }
 
@@ -302,7 +302,7 @@
 }
 
 .tag,
-.away {
+.disconnected {
   flex-shrink: 0;
   font-size: 12px;
   font-weight: 600;

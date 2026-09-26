@@ -6,7 +6,7 @@
 
 ## Phase 1 — Build (§2, §3, §4)
 
-- [x] **T1.1 Lobby.** `PlayerList` in `Lobby.tsx` renders the disconnected mark and the "disconnected" label; `Room.module.css` styles `.readyMark[data-away]`.
+- [x] **T1.1 Lobby.** `PlayerList` in `Lobby.tsx` renders the disconnected mark and the "disconnected" label; `Room.module.css` styles `.readyMark[data-disconnected]`.
 - [x] **T1.2 Tests.** The `Room.test.tsx` and `a11y.test.tsx` cases in §4.
       _Done when:_ `pnpm lint && pnpm typecheck && pnpm test` pass.
 

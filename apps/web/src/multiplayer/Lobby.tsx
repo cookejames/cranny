@@ -142,22 +142,26 @@ function PlayerList({ seats, heading, showScores, state, self, client, names }: 
       </h2>
       <ul className={styles.players}>
         {seats.map((seat) => {
-          const away = !state.present.includes(seat.id);
+          const disconnected = !state.present.includes(seat.id);
           const ready = state.round.ready.includes(seat.id);
           const you = seat.id === self;
           return (
-            <li key={seat.id} className={styles.player} data-away={away ? '' : undefined}>
+            <li
+              key={seat.id}
+              className={styles.player}
+              data-disconnected={disconnected ? '' : undefined}
+            >
               <span
                 className={styles.readyMark}
                 data-ready={ready ? '' : undefined}
-                data-away={away ? '' : undefined}
+                data-disconnected={disconnected ? '' : undefined}
               >
                 {ready && (
                   <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M5 12l5 5 9-10" />
                   </svg>
                 )}
-                {away && (
+                {disconnected && (
                   // A broken link; the visible "disconnected" label is its text equivalent.
                   <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M10 7l1.5-1.5a4 4 0 0 1 5.7 5.7L15.5 13" />
@@ -165,7 +169,9 @@ function PlayerList({ seats, heading, showScores, state, self, client, names }: 
                     <path d="M4 4l16 16" />
                   </svg>
                 )}
-                {!away && <span className="visually-hidden">{ready ? 'Ready' : 'Not ready'}</span>}
+                {!disconnected && (
+                  <span className="visually-hidden">{ready ? 'Ready' : 'Not ready'}</span>
+                )}
               </span>
               {you ? (
                 // Keyed by the name, so a rename from elsewhere (e.g. before a reload) shows.
@@ -174,7 +180,7 @@ function PlayerList({ seats, heading, showScores, state, self, client, names }: 
                 <span className={styles.playerName}>{names.get(seat.id) ?? seat.name}</span>
               )}
               {you && <span className={styles.tag}>You</span>}
-              {away && <span className={styles.away}>disconnected</span>}
+              {disconnected && <span className={styles.disconnected}>disconnected</span>}
               {showScores && (
                 <span className={styles.score}>
                   {seat.score}
