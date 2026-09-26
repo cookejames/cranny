@@ -26,6 +26,22 @@ function checkRoomTransport(): Plugin {
  */
 const roomsApiProxy = { '/api': { target: 'https://cranny.cooke.ing', changeOrigin: true } };
 
+/**
+ * `/relay` goes to PostHog without the prefix, as CloudFront sends it (infra/cdn.tf), so a
+ * preview of a production build sends analytics. SDK assets come from a separate host, so
+ * those paths come first.
+ */
+const posthogProxy = Object.fromEntries(
+  [
+    ['/relay/static', 'https://eu-assets.i.posthog.com'],
+    ['/relay/array', 'https://eu-assets.i.posthog.com'],
+    ['/relay', 'https://eu.i.posthog.com'],
+  ].map(([path, target]) => [
+    path,
+    { target, changeOrigin: true, rewrite: (p: string) => p.replace(/^\/relay/, '') },
+  ]),
+);
+
 export default defineConfig({
   plugins: [react(), checkRoomTransport()],
   build: {
@@ -34,8 +50,8 @@ export default defineConfig({
   },
   // `pnpm preview` serves the production build with the same headers CloudFront will send
   // (specs/2026-09-25-single-player/SPEC.md §11), so CSP problems show up before deploying.
-  preview: { headers: securityHeaders, proxy: roomsApiProxy },
-  server: { proxy: roomsApiProxy },
+  preview: { headers: securityHeaders, proxy: { ...roomsApiProxy, ...posthogProxy } },
+  server: { proxy: { ...roomsApiProxy, ...posthogProxy } },
   test: {
     environment: 'jsdom',
     // ABLY_KEY from the repo-root .env (git-ignored), for the Ably conformance run. Tests only:

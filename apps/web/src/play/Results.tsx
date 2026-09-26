@@ -1,6 +1,7 @@
 import type { BoardState } from '@cranny/engine';
 import { useCallback, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router';
+import { track } from '../analytics/analytics.ts';
 import { Board } from '../board/Board.tsx';
 import { formatTime } from '../game/formatTime.ts';
 import type { SolveOutcome } from '../game/stats.ts';
@@ -34,6 +35,7 @@ export function Results({ code, shared, board, outcome, onNextGrid }: ResultsPro
   const share = async () => {
     const url = new URL(`/g/${code}`, window.location.origin).href;
     const result = await shareLink(shareText(outcome.ms), url);
+    track({ name: 'link_shared', kind: 'grid', result });
     setToast(SHARE_TOASTS[result] ?? null);
   };
 

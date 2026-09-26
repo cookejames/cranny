@@ -124,7 +124,7 @@ data "aws_iam_policy_document" "ci_read" {
   # CloudFront's List* calls (the managed cache policies are looked up by name) take no resource.
   statement {
     sid       = "CloudFrontRead"
-    actions   = ["cloudfront:Get*", "cloudfront:List*"]
+    actions   = ["cloudfront:Get*", "cloudfront:List*", "cloudfront:DescribeFunction"]
     resources = ["*"]
   }
   statement {
@@ -221,6 +221,10 @@ data "aws_iam_policy_document" "ci_deploy" {
       "cloudfront:CreateResponseHeadersPolicy",
       "cloudfront:UpdateResponseHeadersPolicy",
       "cloudfront:DeleteResponseHeadersPolicy",
+      "cloudfront:CreateFunction",
+      "cloudfront:UpdateFunction",
+      "cloudfront:PublishFunction",
+      "cloudfront:DeleteFunction",
       "cloudfront:TagResource",
       "cloudfront:UntagResource",
     ]
@@ -228,6 +232,7 @@ data "aws_iam_policy_document" "ci_deploy" {
       "arn:aws:cloudfront::${local.account}:distribution/*",
       "arn:aws:cloudfront::${local.account}:origin-access-control/*",
       "arn:aws:cloudfront::${local.account}:response-headers-policy/*",
+      "arn:aws:cloudfront::${local.account}:function/*",
     ]
   }
   statement {

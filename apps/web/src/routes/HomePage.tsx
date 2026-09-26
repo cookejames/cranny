@@ -1,5 +1,6 @@
 import { useId, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router';
+import { track } from '../analytics/analytics.ts';
 import { Board } from '../board/Board.tsx';
 import { formatTime } from '../game/formatTime.ts';
 import { averageMs } from '../game/stats.ts';
@@ -114,9 +115,14 @@ export function HomePage({ multiplayer = false }: { multiplayer?: boolean }) {
               className={installStyles.button}
               aria-label="Install app"
               title="Install app"
-              onClick={() =>
-                installOption === 'ios' ? setInstructionsOpen(true) : void install.prompt()
-              }
+              onClick={() => {
+                track({
+                  name: 'install_clicked',
+                  platform: installOption === 'ios' ? 'ios' : 'android',
+                });
+                if (installOption === 'ios') setInstructionsOpen(true);
+                else void install.prompt();
+              }}
             >
               <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M12 4v11" />
