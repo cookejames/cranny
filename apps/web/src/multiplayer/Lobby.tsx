@@ -36,7 +36,7 @@ const notReady = (count: number) => `${count} ${count === 1 ? 'player' : 'player
 
 /**
  * The room's lobby (specs/2026-09-25-multiplayer/SPEC.md §9): the room name with Share, the last
- * round's results, the players (or totals) with ready ticks and away markers, the Ready toggle
+ * round's results, the players (or totals) with ready and disconnected marks, the Ready toggle
  * and the ready countdown, and Finish.
  */
 export function Lobby({ state, self, client, names, onLeave }: LobbyProps) {
@@ -130,8 +130,9 @@ type PlayerListProps = {
 };
 
 /**
- * The room's seats (SPEC §9): name, total score, a ready tick and an "away" marker, with this
- * player's row marked "You" and their name editable in place.
+ * The room's seats (SPEC §9): name, total score, a ready tick, or a disconnected icon and label
+ * for absent seats (specs/2026-09-26-disconnected-marker), with this player's row marked "You"
+ * and their name editable in place.
  */
 function PlayerList({ seats, heading, showScores, state, self, client, names }: PlayerListProps) {
   return (
@@ -146,13 +147,25 @@ function PlayerList({ seats, heading, showScores, state, self, client, names }: 
           const you = seat.id === self;
           return (
             <li key={seat.id} className={styles.player} data-away={away ? '' : undefined}>
-              <span className={styles.readyMark} data-ready={ready ? '' : undefined}>
+              <span
+                className={styles.readyMark}
+                data-ready={ready ? '' : undefined}
+                data-away={away ? '' : undefined}
+              >
                 {ready && (
                   <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M5 12l5 5 9-10" />
                   </svg>
                 )}
-                <span className="visually-hidden">{ready ? 'Ready' : 'Not ready'}</span>
+                {away && (
+                  // A broken link; the visible "disconnected" label is its text equivalent.
+                  <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M10 7l1.5-1.5a4 4 0 0 1 5.7 5.7L15.5 13" />
+                    <path d="M14 17l-1.5 1.5a4 4 0 0 1-5.7-5.7L8.5 11" />
+                    <path d="M4 4l16 16" />
+                  </svg>
+                )}
+                {!away && <span className="visually-hidden">{ready ? 'Ready' : 'Not ready'}</span>}
               </span>
               {you ? (
                 // Keyed by the name, so a rename from elsewhere (e.g. before a reload) shows.
@@ -161,7 +174,7 @@ function PlayerList({ seats, heading, showScores, state, self, client, names }: 
                 <span className={styles.playerName}>{names.get(seat.id) ?? seat.name}</span>
               )}
               {you && <span className={styles.tag}>You</span>}
-              {away && <span className={styles.away}>away</span>}
+              {away && <span className={styles.away}>disconnected</span>}
               {showScores && (
                 <span className={styles.score}>
                   {seat.score}

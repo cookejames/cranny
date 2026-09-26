@@ -247,12 +247,22 @@
   color: var(--color-tile-selected);
 }
 
+.readyMark[data-away] {
+  border-style: dashed;
+  border-color: var(--color-muted);
+  color: var(--color-muted);
+}
+
 .readyMark svg {
   fill: none;
   stroke: currentColor;
   stroke-width: 3;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.readyMark[data-away] svg {
+  stroke-width: 2.25;
 }
 
 .playerName {

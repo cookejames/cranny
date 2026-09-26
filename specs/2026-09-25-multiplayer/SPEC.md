@@ -330,7 +330,7 @@ API Gateway WebSocket API + Lambda + DynamoDB (connections by channel). `$connec
 ### Room: lobby (`/m/:room`, round status `lobby`)
 
 - The header has a back link, which leaves the room the same way as **Finish** (with the same confirmation), the room name in large type, and **Share**, which uses `navigator.share` with "Join my Cranny room: amber-otter-quilt" and the URL, or copies them with a "Link copied" toast (reuse `shareGrid`, generalised).
-- The player list shows each seat's name, total score, a ready tick and an "away" marker for absent seats, with your own row marked "You" and your name editable in place.
+- The player list shows each seat's name, total score, a ready tick and an "away" marker for absent seats, with your own row marked "You" and your name editable in place. (Absent seats now show a disconnected icon and a "disconnected" label: `specs/2026-09-26-disconnected-marker/`.)
 - A **Ready** toggle (primary). It is disabled with "Waiting for another player" while you're alone.
 - The ready countdown, when running: "Starting in 0:24 · 1 player not ready".
 - After a round: the **round results** (placings, time, points, outcome), then the **totals**, sorted by score. **Play another** is the Ready button; **Finish** leaves the room and goes Home, after a confirmation.
