@@ -572,7 +572,8 @@
 }
 
 .gridDialog {
-  width: auto;
+  /* Hug the board, so a tap anywhere outside it lands on the backdrop. */
+  width: fit-content;
   max-width: calc(100vw - 16px);
 }
 

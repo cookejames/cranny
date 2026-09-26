@@ -36,7 +36,7 @@
 
 ## Phase 3 — Check
 
-- [ ] **T3.1 Browser check.**
+- [x] **T3.1 Browser check.**
   - Run `pnpm dev` and open two tabs on `/m/<room>?solve`. Finish in one and leave the other partial until time's up.
   - Both result rows open the right grid.
   - Close the modal with ×, with Escape, and with a tap outside.
