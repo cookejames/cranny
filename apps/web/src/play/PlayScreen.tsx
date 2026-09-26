@@ -1,6 +1,7 @@
 import { generateGrid, PIECE_IDS, solve } from '@cranny/engine';
 import { useEffect, useReducer, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
+import { durationBucket, track } from '../analytics/analytics.ts';
 import {
   elapsedMs,
   isPlaced,
@@ -114,12 +115,13 @@ export function PlayScreen({ version, seed, code, shared, startSolved = false }:
       const { stats, outcome } = recordSolve(loadStats(), finalMs);
       saveStats(stats);
       solve.current = outcome;
+      track({ name: 'solo_round_completed', shared, duration: durationBucket(finalMs) });
     }
     const outcome = solve.current;
     const ms = prefersReducedMotion() ? REDUCED_CELEBRATION_MS : CELEBRATION_MS;
     const timer = setTimeout(() => setResults(outcome), ms);
     return () => clearTimeout(timer);
-  }, [finalMs]);
+  }, [finalMs, shared]);
 
   const nextGrid = () => navigate('/play');
 
@@ -159,7 +161,10 @@ export function PlayScreen({ version, seed, code, shared, startSolved = false }:
               <button
                 type="button"
                 className={styles.start}
-                onClick={() => dispatch({ type: 'start', at: Date.now() })}
+                onClick={() => {
+                  dispatch({ type: 'start', at: Date.now() });
+                  track({ name: 'solo_round_started', shared });
+                }}
               >
                 Start
               </button>

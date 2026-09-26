@@ -59,7 +59,24 @@ data "aws_cloudfront_cache_policy" "optimized" {
   name = "Managed-CachingOptimized"
 }
 
-# For /api/*: never cache, and forward everything but Host (API Gateway needs its own).
+# Analytics proxy (specs/2026-09-26-analytics/SPEC.md): /relay/* goes to PostHog's EU cloud, so
+# the CSP's connect-src needs only 'self' and ad blockers don't recognise the requests. PostHog
+# serves everything at its root, so this function strips the prefix first.
+resource "aws_cloudfront_function" "strip_relay" {
+  name    = "cranny-strip-relay"
+  runtime = "cloudfront-js-2.0"
+  comment = "Strips /relay before requests go to PostHog"
+  code    = file("${path.module}/functions/strip-relay.js")
+  publish = true
+}
+
+locals {
+  # PostHog's SDK assets (/static/*, /array/*) come from a different host to its ingestion API.
+  posthog_asset_paths = ["/relay/static/*", "/relay/array/*"]
+}
+
+# For /api/* and /relay/*: never cache, and forward everything but Host (API Gateway and PostHog
+# need their own).
 data "aws_cloudfront_cache_policy" "disabled" {
   name = "Managed-CachingDisabled"
 }
@@ -97,6 +114,32 @@ resource "aws_cloudfront_distribution" "site" {
     }
   }
 
+  # PostHog (analytics). CloudFront appends the viewer's IP to X-Forwarded-For, which PostHog's
+  # cookieless mode needs to count visitors.
+  origin {
+    origin_id   = "posthog-api"
+    domain_name = "eu.i.posthog.com"
+
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "https-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
+  origin {
+    origin_id   = "posthog-assets"
+    domain_name = "eu-assets.i.posthog.com"
+
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "https-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
   ordered_cache_behavior {
     path_pattern               = "/api/*"
     target_origin_id           = "rooms-api"
@@ -107,6 +150,44 @@ resource "aws_cloudfront_distribution" "site" {
     cache_policy_id            = data.aws_cloudfront_cache_policy.disabled.id
     origin_request_policy_id   = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
     response_headers_policy_id = aws_cloudfront_response_headers_policy.security.id
+  }
+
+  # The asset paths come before /relay/*: CloudFront uses the first behaviour that matches.
+  dynamic "ordered_cache_behavior" {
+    for_each = local.posthog_asset_paths
+    content {
+      path_pattern               = ordered_cache_behavior.value
+      target_origin_id           = "posthog-assets"
+      viewer_protocol_policy     = "https-only"
+      allowed_methods            = ["GET", "HEAD", "OPTIONS"]
+      cached_methods             = ["GET", "HEAD"]
+      compress                   = true
+      cache_policy_id            = data.aws_cloudfront_cache_policy.disabled.id
+      origin_request_policy_id   = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
+      response_headers_policy_id = aws_cloudfront_response_headers_policy.security.id
+
+      function_association {
+        event_type   = "viewer-request"
+        function_arn = aws_cloudfront_function.strip_relay.arn
+      }
+    }
+  }
+
+  ordered_cache_behavior {
+    path_pattern               = "/relay/*"
+    target_origin_id           = "posthog-api"
+    viewer_protocol_policy     = "https-only"
+    allowed_methods            = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods             = ["GET", "HEAD"]
+    compress                   = true
+    cache_policy_id            = data.aws_cloudfront_cache_policy.disabled.id
+    origin_request_policy_id   = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.security.id
+
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.strip_relay.arn
+    }
   }
 
   default_cache_behavior {
@@ -122,6 +203,7 @@ resource "aws_cloudfront_distribution" "site" {
   # SPA deep links (SPEC.md §11): /g/<code> isn't a file, so S3 answers 403 (no ListBucket
   # permission) or 404. Serve the app instead, with 200, and let the router take over. This
   # applies to every origin, so the rooms API never answers 403 or 404 (apps/rooms-api/src/api.ts).
+  # PostHog's errors are rewritten too, which is harmless: the SDK ignores what ingestion returns.
   dynamic "custom_error_response" {
     for_each = [403, 404]
     content {

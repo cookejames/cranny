@@ -1,6 +1,7 @@
 import { generateGrid, PIECE_IDS, solve } from '@cranny/engine';
 import type { LiveRound, PlayerId, RoomClient, RoomState } from '@cranny/multiplayer';
 import { useEffect, useReducer, useRef, useState } from 'react';
+import { durationBucket, track } from '../analytics/analytics.ts';
 import { formatTime } from '../game/formatTime.ts';
 import {
   elapsedMs,
@@ -157,16 +158,19 @@ export function RoomRound({
   // The reveal (SPEC §5.4): at this tab's local deadline, or at once if the countdown was missed
   // (e.g. a reload without a saved board).
   const revealAt = live.status === 'countdown' ? live.revealAt : null;
+  // The round's players are fixed once it starts, so this doesn't restart the countdown.
+  const players = live.participants.length;
   useEffect(() => {
     if (round.status !== 'pre-start' || ended) return;
     const at = revealAt ?? Date.now();
     const reveal = () => {
       const solved = startSolved && nearlySolved(grid, at);
       dispatch(solved ? { type: 'replace', state: solved } : { type: 'start', at });
+      track({ name: 'mp_round_started', players });
     };
     const timer = setTimeout(reveal, Math.max(0, at - Date.now()));
     return () => clearTimeout(timer);
-  }, [round.status, revealAt, ended, startSolved, grid]);
+  }, [round.status, revealAt, ended, startSolved, grid, players]);
 
   // Save the board after every change, and report progress while playing.
   const placed = placedCount(round);
@@ -201,7 +205,8 @@ export function RoomRound({
     if (finishedMs === null || recorded.current) return;
     recorded.current = true;
     saveMultiplayerStats(recordSolve(loadMultiplayerStats(), finishedMs).stats);
-  }, [finishedMs]);
+    track({ name: 'mp_round_completed', players, duration: durationBucket(finishedMs) });
+  }, [finishedMs, players]);
   useEffect(() => {
     if (finishedMs !== null && !ended) client.reportFinished(number, finishedMs);
   }, [client, number, finishedMs, ended]);

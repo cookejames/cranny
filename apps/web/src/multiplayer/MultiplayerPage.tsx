@@ -10,6 +10,7 @@ import {
 } from '@cranny/multiplayer';
 import { useId, useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
+import { track } from '../analytics/analytics.ts';
 import styles from './MultiplayerPage.module.css';
 import { playerName, setPlayerName } from './playerName.ts';
 import { seatIdFor } from './seat.ts';
@@ -133,8 +134,12 @@ export function MultiplayerPage({ directory }: { directory: RoomDirectory }) {
     setCreateError(null);
     const result = await createRoom(directory, custom === '' ? null : custom);
     setBusy(false);
-    if ('error' in result) setCreateError(result.error);
-    else void navigate(`/m/${result.room}`);
+    if ('error' in result) {
+      setCreateError(result.error);
+      return;
+    }
+    track({ name: 'mp_room_created', customName: custom !== '' });
+    void navigate(`/m/${result.room}`);
   };
 
   /** Checks the room exists, then opens it. The room screen reports a full room. */
@@ -155,6 +160,7 @@ export function MultiplayerPage({ directory }: { directory: RoomDirectory }) {
       return;
     }
     handOff(result, self);
+    track({ name: 'mp_room_joined' });
     void navigate(`/m/${room}`);
   };
 

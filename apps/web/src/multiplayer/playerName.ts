@@ -14,6 +14,15 @@ export function playerName(): string {
 }
 
 /**
+ * The player's name if they have one (this session's, else the remembered one), without making
+ * up a random one as {@link playerName} does. Null for someone who has never had a name, e.g. a
+ * solo player who hasn't opened Multiplayer.
+ */
+export function knownPlayerName(): string | null {
+  return current ?? loadPlayerName();
+}
+
+/**
  * Sets and remembers the player's name, cleaned first.
  *
  * @returns The name as stored, or null if it cleaned to nothing (and nothing changed).
