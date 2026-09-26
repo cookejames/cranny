@@ -1,9 +1,11 @@
 import { BOARD_SIZE, generateGrid, PIECE_IDS, solve } from '@cranny/engine';
 import {
   CLOSE_OUT_MS,
+  encodeBoard,
   encodeMessage,
   isDirectoryError,
   PROTOCOL_VERSION,
+  READY_TIMEOUT_MS,
   REVEAL_COUNTDOWN_MS,
   type PlayerId,
   type RoomClient,
@@ -357,6 +359,114 @@ describe('a round', () => {
     await settle(1_000);
     expect(screen.getByRole('heading', { name: 'You finished 1st' })).toBeInTheDocument();
     expect(loadMultiplayerStats().solved).toBe(1);
+  });
+});
+
+describe('player grids (specs/2026-09-26-player-grids)', () => {
+  /** Plays a round in which Teal Otter solves the grid and this tab places nothing. */
+  async function playAndEnd() {
+    const room = await createRoom();
+    const b = await addPlayer(room, B, 'Teal Otter');
+    const c = await addPlayer(room, C, 'Rose Lynx');
+    // Rose Lynx sits this round out.
+    fireEvent.click(screen.getByRole('button', { name: 'Ready' }));
+    b.setReady(true);
+    await settle(READY_TIMEOUT_MS + 200);
+    await settle(REVEAL_COUNTDOWN_MS);
+    const grid = b.view().room!.round.grid!;
+    b.reportBoard(1, solve(generateGrid(grid.seed, grid.version).blocked)!);
+    b.reportFinished(1, 42_300);
+    await settle(CLOSE_OUT_MS + TIMES_UP_MS + 500);
+    return { b, c };
+  }
+
+  /** The results row for a player. */
+  const rowOf = (name: RegExp) =>
+    within(screen.getByRole('table'))
+      .getAllByRole('row')
+      .find((r) => name.test(r.textContent ?? ''))!;
+
+  it('shows a button on each participant’s row, and none for players who sat out', async () => {
+    await playAndEnd();
+    expect(
+      within(rowOf(/Teal Otter/)).getByRole('button', { name: 'Show Teal Otter’s grid' }),
+    ).toBeInTheDocument();
+    expect(
+      within(rowOf(/You/)).getByRole('button', { name: 'Show your grid' }),
+    ).toBeInTheDocument();
+    expect(within(rowOf(/Rose Lynx/)).queryByRole('button')).toBeNull();
+  });
+
+  it('shows a finished grid, and closes with ×, Escape or a tap outside', async () => {
+    await playAndEnd();
+    const open = () =>
+      fireEvent.click(screen.getByRole('button', { name: 'Show Teal Otter’s grid' }));
+
+    open();
+    const dialog = screen.getByRole('dialog', { name: 'Teal Otter’s grid' });
+    expect(dialog).toHaveAccessibleDescription('1st · 0:42.3');
+    expect(within(dialog).getAllByRole('gridcell', { name: /: Tee$/ })).toHaveLength(4);
+    expect(within(dialog).queryAllByRole('gridcell', { name: /: empty$/ })).toHaveLength(0);
+    const close = within(dialog).getByRole('button', { name: 'Close' });
+    expect(close).toHaveFocus();
+    fireEvent.click(close);
+    expect(dialog).not.toHaveAttribute('open');
+
+    open();
+    expect(dialog).toHaveAttribute('open');
+    fireEvent(dialog, new Event('cancel', { cancelable: true }));
+    expect(dialog).not.toHaveAttribute('open');
+
+    open();
+    // A click on the backdrop lands on the dialog element itself.
+    fireEvent.click(dialog);
+    expect(dialog).not.toHaveAttribute('open');
+
+    open();
+    // A click on the board inside doesn't close it.
+    fireEvent.click(within(dialog).getAllByRole('gridcell')[0]!);
+    expect(dialog).toHaveAttribute('open');
+  });
+
+  it('shows a partial grid for a player who didn’t finish', async () => {
+    await playAndEnd();
+    fireEvent.click(screen.getByRole('button', { name: 'Show your grid' }));
+    const dialog = screen.getByRole('dialog', { name: 'Your grid' });
+    expect(dialog).toHaveAccessibleDescription('Didn’t finish · 0 of 9 pieces');
+    expect(within(dialog).getAllByRole('gridcell', { name: /: empty$/ })).toHaveLength(29);
+  });
+
+  it('reports the finished board after a reload in the waiting view', async () => {
+    const room = await createRoom();
+    const b = await addPlayer(room, B, 'Teal Otter');
+    await startRound([b]);
+    const self = uiId();
+    const grid = b.view().room!.round.grid!;
+    const solution = solve(generateGrid(grid.seed, grid.version).blocked)!;
+    const saved = loadMultiplayerRound()!;
+    // Reload after finishing: the saved round has the full board and a time.
+    cleanup();
+    await settle(1_000);
+    saveMultiplayerRound({ ...saved, placements: solution, finishedMs: 40_000 });
+    saveSeat({ room, playerId: self });
+    renderTab(`/m/${room}`);
+    await settle(1_000);
+    expect(screen.getByText('Waiting for the others to finish.')).toBeInTheDocument();
+    b.reportFinished(1, 50_000);
+    await settle(TIMES_UP_MS + 1_000);
+    const place = b.view().room!.lastResult!.places.find((p) => p.id === self)!;
+    expect(place.outcome).toBe('finished');
+    expect(place.board).toEqual(encodeBoard(solution));
+  });
+
+  it('closes when the player whose grid is open leaves', async () => {
+    const { b } = await playAndEnd();
+    fireEvent.click(screen.getByRole('button', { name: 'Show Teal Otter’s grid' }));
+    const dialog = screen.getByRole('dialog', { name: 'Teal Otter’s grid' });
+    const left = b.leave();
+    await settle(3_000);
+    await left;
+    expect(dialog).not.toHaveAttribute('open');
   });
 });
 

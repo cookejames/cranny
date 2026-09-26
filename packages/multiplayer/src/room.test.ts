@@ -332,6 +332,7 @@ describe('the close-out and the end of a round', () => {
     expect(room.state.round).toMatchObject({ number: 1, status: 'lobby', grid: null });
     expect(room.state.lastResult).toEqual({
       number: 1,
+      grid: { version: CURRENT_VERSION, seed: SEED },
       places: [
         { id: 'b', ms: 60_000, points: 5, outcome: 'finished' },
         { id: 'a', ms: 60_000, points: 3, outcome: 'finished' },
@@ -412,6 +413,70 @@ describe('the close-out and the end of a round', () => {
     room.advance(CLOSE_OUT_MS);
     expect(room.score('c')).toBe(0);
     expect(room.state.lastResult!.places.map((p) => p.outcome)).toEqual(['finished', 'dnf', 'dnf']);
+  });
+});
+
+describe('boards after a round (specs/2026-09-26-player-grids)', () => {
+  const FULL = [0, 17, 42, 99, 150, 201, 250, 280, 287];
+  const PARTIAL = [3, null, null, 64, null, null, null, 7, null];
+
+  /** A room whose round 1 has ended: a finished, b didn't, c sat out. */
+  function ended() {
+    const room = new Room(['a', 'b', 'c']);
+    room.ready('a', 'b');
+    room.advance(READY_TIMEOUT_MS + REVEAL_COUNTDOWN_MS);
+    room.finish('a');
+    room.advance(CLOSE_OUT_MS);
+    expect(room.state.round.status).toBe('lobby');
+    return room;
+  }
+
+  /** The board stored for a player in the last result. */
+  const boardOf = (room: Room, id: PlayerId) =>
+    room.state.lastResult!.places.find((p) => p.id === id)?.board;
+
+  it('stores boards from finishers and players who didn’t finish', () => {
+    const room = ended();
+    const rev = room.state.rev;
+    room.send('a', { type: 'board', round: 1, board: FULL });
+    room.send('b', { type: 'board', round: 1, board: PARTIAL });
+    expect(boardOf(room, 'a')).toEqual(FULL);
+    expect(boardOf(room, 'b')).toEqual(PARTIAL);
+    expect(room.state.rev).toBe(rev + 2);
+  });
+
+  it('ignores a board from someone who sat out, a stranger, the wrong round, or a repeat', () => {
+    const room = ended();
+    room.send('a', { type: 'board', round: 1, board: FULL });
+    const after = room.state;
+    room.send('a', { type: 'board', round: 1, board: PARTIAL });
+    room.send('b', { type: 'board', round: 2, board: PARTIAL });
+    room.send('c', { type: 'board', round: 1, board: PARTIAL });
+    room.send('z', { type: 'board', round: 1, board: PARTIAL });
+    expect(room.state).toBe(after);
+  });
+
+  it('ignores a board before any round has ended', () => {
+    const room = new Room(['a', 'b']);
+    room.play('a', 'b');
+    const playing = room.state;
+    room.send('a', { type: 'board', round: 1, board: FULL });
+    expect(room.state).toBe(playing);
+  });
+
+  it('never puts boards in the round being played', () => {
+    const room = ended();
+    room.send('a', { type: 'board', round: 1, board: FULL });
+    room.play('a', 'b');
+    expect(JSON.stringify(room.state.round)).not.toContain('board');
+  });
+
+  it('keeps the boards in snapshots, and drops a player’s board when they leave', () => {
+    const room = ended();
+    room.send('a', { type: 'board', round: 1, board: FULL });
+    expect(toSnapshot(room.state, room.now).lastResult!.places[0]!.board).toEqual(FULL);
+    room.send('a', { type: 'leave' });
+    expect(boardOf(room, 'a')).toBeUndefined();
   });
 });
 

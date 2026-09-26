@@ -1,3 +1,5 @@
+import type { Placement, PieceId } from '@cranny/engine';
+import { encodeBoard, type BoardCode } from './board.ts';
 import { systemClock, type Clock, type TimerHandle } from './clock.ts';
 import type { RoomTicket } from './directory.ts';
 import { cleanPlayerName } from './names.ts';
@@ -96,6 +98,8 @@ export class RoomClient {
   private state: RoomState | null = null;
   private hosting = false;
   private reported: Reported | null = null;
+  /** This player's latest board and the round it's for, sent once that round has ended. */
+  private board: { round: number; code: BoardCode; sent: boolean } | null = null;
   private wantReady = false;
   private lastSentAt = -Infinity;
   private lastResendAt = -Infinity;
@@ -196,6 +200,18 @@ export class RoomClient {
     if (reported.finishedMs !== null) return;
     reported.finishedMs = ms;
     this.intent({ type: 'finished', round, ms });
+  }
+
+  /**
+   * Records this player's board for a round (specs/2026-09-26-player-grids/SPEC.md §3.3). Nothing
+   * is sent while the round is on: the board goes to the host once the room's last result is for
+   * this round, and is resent until a snapshot shows it.
+   */
+  reportBoard(round: number, placements: Partial<Record<PieceId, Placement>>): void {
+    this.board = { round, code: encodeBoard(placements), sent: false };
+    if (!this.state || !this.missingBoard(this.state)) return;
+    if (this.hosting) this.applyOwnBoard();
+    else this.reconcile();
   }
 
   /**
@@ -412,11 +428,18 @@ export class RoomClient {
 
   /**
    * Resends what a snapshot shows the host never got (delivery is at most once, SPEC §6.1): a
-   * seat, the name, ready, progress or a finish. At most once per `RESEND_INTERVAL_MS`.
+   * seat, the name, ready, progress, a finish or a board. At most once per `RESEND_INTERVAL_MS`,
+   * except a board's first send, which goes at once.
    */
   private reconcile(): void {
     const state = this.state;
     if (this.hosting || !state || this.leaving || this.isFinished()) return;
+    // A board's first send isn't a resend, so it goes at once rather than waiting its turn.
+    const board = this.board && !this.board.sent ? this.missingBoard(state) : null;
+    if (board) {
+      this.board!.sent = true;
+      this.publish(board);
+    }
     const wait = this.lastResendAt + RESEND_INTERVAL_MS - this.clock.now();
     if (wait > 0) {
       if (this.resendTimer === null) {
@@ -427,7 +450,8 @@ export class RoomClient {
       }
       return;
     }
-    const lost = this.missingIntents(state);
+    // A board sent just now can't be in the snapshot yet.
+    const lost = this.missingIntents(state).filter((m) => !(board && m.type === 'board'));
     if (lost.length === 0) return;
     this.lastResendAt = this.clock.now();
     for (const message of lost) this.publish(message);
@@ -444,6 +468,8 @@ export class RoomClient {
       if (this.wantReady !== round.ready.includes(this.self)) {
         lost.push({ type: 'ready', ready: this.wantReady });
       }
+      const board = this.missingBoard(state);
+      if (board) lost.push(board);
       return lost;
     }
     this.wantReady = false;
@@ -460,7 +486,29 @@ export class RoomClient {
     return lost;
   }
 
-  /** Host: runs the reducer, then sends a snapshot and reschedules the next deadline. */
+  /**
+   * The `board` message the last result is waiting for from this player, or null: the result is
+   * for the round the recorded board is for, this player played it, and it has no board yet.
+   */
+  private missingBoard(state: RoomState): ClientMessage | null {
+    const board = this.board;
+    const result = state.lastResult;
+    if (!board || !result || result.number !== board.round) return null;
+    const place = result.places.find((p) => p.id === this.self);
+    if (!place || place.outcome === 'sat-out' || place.board) return null;
+    return { type: 'board', round: board.round, board: board.code };
+  }
+
+  /** Host: applies this player's own board if the last result is waiting for it. */
+  private applyOwnBoard(): void {
+    const message = this.state && this.missingBoard(this.state);
+    if (message) this.apply({ type: 'intent', from: this.self, message });
+  }
+
+  /**
+   * Host: runs the reducer, then sends a snapshot and reschedules the next deadline. If the event
+   * ended a round, the host's own board goes into the result straight away.
+   */
   private apply(event: RoomEvent): void {
     if (!this.state) return;
     const before = this.state;
@@ -469,6 +517,7 @@ export class RoomClient {
     if (this.state.rev !== before.rev) this.scheduleBroadcast();
     this.scheduleTick();
     if (this.state !== before) this.update({ room: this.state, phase: this.seatPhase() });
+    if (this.state.lastResult !== before.lastResult) this.applyOwnBoard();
   }
 
   /** Host: wakes up at the next deadline (ready timeout, reveal or close-out). */

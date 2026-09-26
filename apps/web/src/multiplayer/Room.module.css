@@ -536,6 +536,77 @@
   line-height: 1.45;
 }
 
+/* A player's grid after a round (specs/2026-09-26-player-grids) */
+
+.gridButton {
+  width: 36px;
+  height: 36px;
+  margin: -4px 0 -4px 4px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--color-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+.gridButton:hover {
+  color: var(--color-ink);
+}
+
+.gridButton svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.gridButton:focus-visible {
+  outline: 3px solid var(--piece-i4);
+  outline-offset: 2px;
+}
+
+.gridDialog {
+  /* Hug the board, so a tap anywhere outside it lands on the backdrop. */
+  width: fit-content;
+  max-width: calc(100vw - 16px);
+}
+
+.gridDialogBody {
+  padding: 12px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gridDialogHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.gridDialogHeading {
+  flex: 1;
+  min-width: 0;
+  padding-top: 8px;
+}
+
+.gridDialogSummary {
+  margin: 2px 0 0;
+  font-size: 15px;
+  color: var(--color-muted);
+}
+
+.gridDialogBoard {
+  display: flex;
+  justify-content: center;
+}
+
 .dialogActions {
   margin-top: 6px;
   display: grid;

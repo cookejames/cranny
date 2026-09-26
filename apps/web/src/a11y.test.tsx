@@ -207,5 +207,18 @@ describe('accessibility', () => {
       expect(screen.getByRole('table')).toBeInTheDocument();
       expect(await check()).toEqual([]);
     });
+
+    it('a player’s grid after a round', async () => {
+      const room = await harness.createRoom();
+      const teal = await harness.addPlayer(room, TEAL, 'Teal Otter');
+      await harness.startRound([teal]);
+      teal.reportBoard(1, {});
+      teal.reportFinished(1, 30_000);
+      await settle(200);
+      await settle(60_000);
+      fireEvent.click(screen.getByRole('button', { name: 'Show Teal Otter’s grid' }));
+      expect(screen.getByRole('dialog', { name: 'Teal Otter’s grid' })).toBeInTheDocument();
+      expect(await check()).toEqual([]);
+    });
   });
 });

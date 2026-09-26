@@ -1,5 +1,7 @@
+import { generateGrid, PIECE_IDS, SUPPORTED_VERSIONS, type Grid } from '@cranny/engine';
 import {
   cryptoRandom,
+  decodeBoard,
   randomPlayerName,
   type PlayerId,
   type RoomClient,
@@ -7,10 +9,11 @@ import {
   type RoundResult,
   type Seat,
 } from '@cranny/multiplayer';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { formatTime } from '../game/formatTime.ts';
 import { Toast } from '../play/Toast.tsx';
 import { roomShareText, SHARE_TOASTS, shareLink } from '../share/share.ts';
+import { GridDialog, type GridView } from './GridDialog.tsx';
 import { setPlayerName } from './playerName.ts';
 import { formatCountdown, ordinal } from './progress.ts';
 import styles from './Room.module.css';
@@ -244,7 +247,21 @@ function NameEditor({ name, client }: { name: string; client: RoomClient }) {
 /** What each outcome is called in the results. */
 const OUTCOMES = { dnf: 'Didn’t finish', 'sat-out': 'Sat out' } as const;
 
-/** The last round's results (SPEC §9): place, name, time, points and outcome. */
+/** A result's grid, or null if the result doesn't say or this version can't draw it. */
+function resultGrid(version: number | undefined, seed: number | undefined): Grid | null {
+  if (version === undefined || seed === undefined) return null;
+  if (!(SUPPORTED_VERSIONS as readonly number[]).includes(version)) return null;
+  return generateGrid(seed, version);
+}
+
+/** "6 of 9 pieces". */
+const piecesPlaced = (count: number) => `${count} of ${PIECE_IDS.length} pieces`;
+
+/**
+ * The last round's results (SPEC §9): place, name, time, points and outcome, with a button on
+ * each row whose board arrived that shows it in {@link GridDialog}
+ * (specs/2026-09-26-player-grids/SPEC.md §4).
+ */
 function RoundResults({
   result,
   self,
@@ -254,7 +271,36 @@ function RoundResults({
   self: PlayerId;
   names: ReadonlyMap<PlayerId, string>;
 }) {
+  // Generating the grid runs the solver, so only when the grid changes, not as boards arrive.
+  const { version, seed } = result.grid ?? {};
+  const grid = useMemo(() => resultGrid(version, seed), [version, seed]);
+  // Keyed by round too, so a newer result closes the dialog.
+  const [open, setOpen] = useState<{ round: number; id: PlayerId } | null>(null);
+  const close = useCallback(() => setOpen(null), []);
+
+  const placeOf = new Map<PlayerId, number>();
   let place = 0;
+  for (const p of result.places) if (p.outcome === 'finished') placeOf.set(p.id, ++place);
+
+  /** "Teal Otter’s grid", or "Your grid" for this player. */
+  const titleFor = (id: PlayerId) =>
+    id === self ? 'Your grid' : `${names.get(id) ?? 'Player'}’s grid`;
+
+  let view: GridView | null = null;
+  const shown = open?.round === result.number && result.places.find((p) => p.id === open.id);
+  if (shown && shown.board && grid) {
+    const board = decodeBoard(grid, shown.board);
+    const finishedAt = placeOf.get(shown.id);
+    view = {
+      title: titleFor(shown.id),
+      summary:
+        finishedAt !== undefined && shown.ms !== null
+          ? `${ordinal(finishedAt)} · ${formatTime(shown.ms, { tenths: true })}`
+          : `Didn’t finish · ${piecesPlaced(Object.keys(board.placements).length)}`,
+      board,
+    };
+  }
+
   return (
     <section className={styles.section} aria-labelledby="results-heading">
       <h2 id="results-heading" className={styles.heading}>
@@ -272,13 +318,25 @@ function RoundResults({
         <tbody>
           {result.places.map((p) => {
             const finished = p.outcome === 'finished';
-            if (finished) place++;
             return (
               <tr key={p.id} data-you={p.id === self ? '' : undefined}>
-                <td className={styles.place}>{finished ? ordinal(place) : '–'}</td>
+                <td className={styles.place}>{finished ? ordinal(placeOf.get(p.id)!) : '–'}</td>
                 <th scope="row" className={styles.resultName}>
                   {names.get(p.id) ?? 'Player'}
                   {p.id === self && <span className={styles.tag}>You</span>}
+                  {p.board && grid && p.outcome !== 'sat-out' && (
+                    <button
+                      type="button"
+                      className={styles.gridButton}
+                      aria-label={`Show ${p.id === self ? 'your grid' : titleFor(p.id)}`}
+                      onClick={() => setOpen({ round: result.number, id: p.id })}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                        <rect x="4" y="4" width="16" height="16" rx="2" />
+                        <path d="M12 4v16M4 12h16" />
+                      </svg>
+                    </button>
+                  )}
                 </th>
                 <td className={finished ? styles.resultTime : styles.outcome}>
                   {finished && p.ms !== null
@@ -291,6 +349,7 @@ function RoundResults({
           })}
         </tbody>
       </table>
+      <GridDialog view={view} onClose={close} />
     </section>
   );
 }

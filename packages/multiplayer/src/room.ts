@@ -1,4 +1,5 @@
 import { CURRENT_VERSION } from '@cranny/engine';
+import type { BoardCode } from './board.ts';
 import { cleanPlayerName } from './names.ts';
 import {
   PROTOCOL_VERSION,
@@ -167,6 +168,8 @@ function applyIntent(state: RoomState, from: PlayerId, message: ClientMessage, n
         closesAt: now + CLOSE_OUT_MS,
       });
     }
+    case 'board':
+      return acceptBoard(state, from, message.round, message.board);
     case 'leave': {
       if (!seat) return state;
       const without = (ids: PlayerId[]) => ids.filter((id) => id !== from);
@@ -187,6 +190,19 @@ function applyIntent(state: RoomState, from: PlayerId, message: ClientMessage, n
       );
     }
   }
+}
+
+/**
+ * Stores a participant's board in the last result (specs/2026-09-26-player-grids/SPEC.md §3.4):
+ * only for that result's round, only from a finisher or a dnf, and only once.
+ */
+function acceptBoard(state: RoomState, from: PlayerId, round: number, board: BoardCode) {
+  const result = state.lastResult;
+  if (!result || result.number !== round) return state;
+  const place = result.places.find((p) => p.id === from);
+  if (!place || place.outcome === 'sat-out' || place.board) return state;
+  const places = result.places.map((p) => (p === place ? { ...p, board: [...board] } : p));
+  return { ...state, lastResult: { ...result, places } };
 }
 
 /** Follows on from the state at `env.now`: starts, reveals and ends rounds (SPEC §2 Rounds). */
@@ -247,7 +263,9 @@ function startRound(state: RoomState, { now, seed }: RoomEnv): RoomState {
 
 /** Scores the round, adds the points to the totals and goes back to the lobby (SPEC §2 Rounds 6). */
 function endRound(state: RoomState): RoomState {
+  const { grid } = state.round;
   const result = roundResult(state.round, state.seats);
+  if (grid) result.grid = grid;
   const points = new Map(result.places.map((p) => [p.id, p.points]));
   return {
     ...state,

@@ -2,6 +2,7 @@
 // directory interfaces. Pure TypeScript, no DOM, Node or vendor SDK types
 // (specs/2026-09-25-multiplayer/SPEC.md §3). Test doubles and the adapter conformance suite are
 // in `@cranny/multiplayer/testing`.
+export { decodeBoard, encodeBoard, isBoardCode, type BoardCode } from './board.ts';
 export {
   HELLO_RETRY_MS,
   HOST_FALLBACK_MS,
