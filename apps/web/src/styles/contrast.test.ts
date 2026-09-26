@@ -32,8 +32,12 @@ function contrast(a: string, b: string): number {
 /** [text token, background token, where it's used]. */
 const PAIRS: Array<[string, string, string]> = [
   ['color-ink', 'color-ground', 'body text, toast, error screen'],
-  ['color-muted', 'color-ground', 'tagline, header label, progress count, Install app'],
-  ['color-muted', 'color-tile', 'tray labels, Home stat labels, "You" and "away" markers'],
+  ['color-muted', 'color-ground', 'tagline, header label, progress count'],
+  [
+    'color-muted',
+    'color-tile',
+    'tray labels, Home stat labels, Install app, "You" and "away" markers',
+  ],
   ['color-muted', 'color-tile-selected', 'selected tray tile label'],
   ['color-ink', 'color-tile', 'Home stat values, multiplayer player rows'],
   ['color-ink', 'color-tile-selected', 'pressed Ready, multiplayer text fields'],

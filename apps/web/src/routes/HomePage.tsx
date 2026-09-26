@@ -7,38 +7,95 @@ import { SHOWCASE_BOARD } from '../home/showcase.ts';
 import { InstallDialog } from '../install/InstallDialog.tsx';
 import { install, useInstallOption } from '../install/install.ts';
 import installStyles from '../install/Install.module.css';
-import { loadStats } from '../storage/storage.ts';
+import { loadMultiplayerStats, loadStats, type Stats } from '../storage/storage.ts';
 import styles from './HomePage.module.css';
 
 /**
  * The decorative board: 300 px as designed, smaller on short or narrow screens. It takes the
  * height left over once everything else on Home is laid out (`100cqh` of the showcase, a size
- * container that fills the spare space), less the Install app button under it when that shows
- * (`--install-space`), so Home fits a short screen (an iPhone SE) whichever of the stats,
- * Multiplayer and Install app are showing. The board is never smaller than 120 px: below that
- * the page scrolls instead (HomePage.module.css). `--board-cap` (300 px, or less in a narrow
- * column) is defined there too, because on desktops the showcase stops growing at it.
+ * container that fills the spare space), so Home fits a short screen (an iPhone SE) whichever of
+ * the stats and Multiplayer are showing. The board is never smaller than 120 px: below that the
+ * page scrolls instead (HomePage.module.css). `--board-cap` (300 px, or less in a narrow column)
+ * is defined there too, because on desktops the showcase stops growing at it.
  */
-const boardSize = 'min(var(--board-cap), 100cqh - var(--install-space))';
-
-/** The showcase's style without the Install app button. */
-const showcaseStyle = { '--board-size': boardSize, '--install-space': '0px' } as CSSProperties;
-
-/** The showcase's style with the Install app button: its 44 px and the 4 px gap above it. */
-const showcaseWithInstallStyle = {
-  '--board-size': boardSize,
-  '--install-space': '48px',
+const showcaseStyle = {
+  '--board-size': 'min(var(--board-cap), 100cqh)',
 } as CSSProperties;
 
+/** Best and Average as shown on Home: whole seconds, or a dash before the first solve. */
+function statTimes(stats: Stats): { best: string; average: string } {
+  const average = averageMs(stats);
+  return {
+    best: stats.bestMs === null ? '—' : formatTime(stats.bestMs),
+    average: average === null ? '—' : formatTime(average),
+  };
+}
+
+/** The solo stats on their own: a tile each for Best, Average and Solved. */
+function StatTiles({ stats }: { stats: Stats }) {
+  const { best, average } = statTimes(stats);
+  return (
+    <dl className={styles.stats} aria-label="Your stats">
+      <div className={styles.stat}>
+        <dt>Best</dt>
+        <dd>{best}</dd>
+      </div>
+      <div className={styles.stat}>
+        <dt>Average</dt>
+        <dd>{average}</dd>
+      </div>
+      <div className={styles.stat}>
+        <dt>Solved</dt>
+        <dd>{stats.solved}</dd>
+      </div>
+    </dl>
+  );
+}
+
 /**
- * Home screen (specs/2026-09-25-single-player/SPEC.md §5, `design/Home.dc.html`): wordmark, tagline, a solved board, the
- * player's stats once they have solved a grid, Play, Multiplayer in builds that have it
- * (specs/2026-09-25-multiplayer/SPEC.md §9), and Install app where the app can be installed
- * (specs/2026-09-25-installable/SPEC.md §5).
+ * Solo and multiplayer stats together (specs/2026-09-26-multiplayer-stats/SPEC.md §4): Best,
+ * Average and Solved headed once, then a row per mode, so both fit where one row of tiles did.
+ * A mode with no solves yet has no row.
+ */
+function StatsTable({ rows }: { rows: { mode: string; stats: Stats }[] }) {
+  return (
+    <table className={styles.statsTable} aria-label="Your stats">
+      <thead>
+        <tr>
+          <td />
+          <th scope="col">Best</th>
+          <th scope="col">Average</th>
+          <th scope="col">Solved</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map(({ mode, stats }) => {
+          const { best, average } = statTimes(stats);
+          return (
+            <tr key={mode}>
+              <th scope="row">{mode}</th>
+              <td>{best}</td>
+              <td>{average}</td>
+              <td>{stats.solved}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
+
+/**
+ * Home screen (specs/2026-09-25-single-player/SPEC.md §5, `design/Home.dc.html`): wordmark, with
+ * Install app beside it where the app can be installed (specs/2026-09-25-installable/SPEC.md §5),
+ * tagline, a solved board, the player's stats once they have solved a grid, with their
+ * multiplayer stats alongside once they have finished a multiplayer round
+ * (specs/2026-09-26-multiplayer-stats/SPEC.md §4), Play, and Multiplayer in builds that have it
+ * (specs/2026-09-25-multiplayer/SPEC.md §9).
  */
 export function HomePage({ multiplayer = false }: { multiplayer?: boolean }) {
   const [stats] = useState(loadStats);
-  const average = averageMs(stats);
+  const [multiplayerStats] = useState(loadMultiplayerStats);
   const titleId = useId();
   const blurbId = useId();
   const multiTitleId = useId();
@@ -49,51 +106,45 @@ export function HomePage({ multiplayer = false }: { multiplayer?: boolean }) {
   return (
     <main className={styles.home}>
       <header className={styles.intro}>
-        <h1 className={styles.wordmark}>Cranny</h1>
+        <div className={styles.titleRow}>
+          <h1 className={styles.wordmark}>Cranny</h1>
+          {installOption !== 'none' && (
+            <button
+              type="button"
+              className={installStyles.button}
+              aria-label="Install app"
+              title="Install app"
+              onClick={() =>
+                installOption === 'ios' ? setInstructionsOpen(true) : void install.prompt()
+              }
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 4v11" />
+                <path d="M7.5 10.5L12 15l4.5-4.5" />
+                <path d="M5 19h14" />
+              </svg>
+            </button>
+          )}
+        </div>
         <p className={styles.tagline}>Nine pieces. Seven blocked squares. One grid to fill.</p>
       </header>
 
-      <div
-        className={styles.showcase}
-        style={installOption === 'none' ? showcaseStyle : showcaseWithInstallStyle}
-      >
+      <div className={styles.showcase} style={showcaseStyle}>
         <div aria-hidden="true">
           <Board board={SHOWCASE_BOARD} />
         </div>
-        {installOption !== 'none' && (
-          <button
-            type="button"
-            className={installStyles.button}
-            onClick={() =>
-              installOption === 'ios' ? setInstructionsOpen(true) : void install.prompt()
-            }
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 4v11" />
-              <path d="M7.5 10.5L12 15l4.5-4.5" />
-              <path d="M5 19h14" />
-            </svg>
-            Install app
-          </button>
-        )}
       </div>
 
       <div className={styles.bottom}>
-        {stats.solved > 0 && (
-          <dl className={styles.stats} aria-label="Your stats">
-            <div className={styles.stat}>
-              <dt>Best</dt>
-              <dd>{stats.bestMs === null ? '—' : formatTime(stats.bestMs)}</dd>
-            </div>
-            <div className={styles.stat}>
-              <dt>Average</dt>
-              <dd>{average === null ? '—' : formatTime(average)}</dd>
-            </div>
-            <div className={styles.stat}>
-              <dt>Solved</dt>
-              <dd>{stats.solved}</dd>
-            </div>
-          </dl>
+        {multiplayerStats.solved > 0 ? (
+          <StatsTable
+            rows={[
+              ...(stats.solved > 0 ? [{ mode: 'Solo', stats }] : []),
+              { mode: 'Multiplayer', stats: multiplayerStats },
+            ]}
+          />
+        ) : (
+          stats.solved > 0 && <StatTiles stats={stats} />
         )}
 
         <Link

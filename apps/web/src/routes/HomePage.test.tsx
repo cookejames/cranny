@@ -1,8 +1,8 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { BeforeInstallPromptEvent } from '../install/install.ts';
-import { saveStats } from '../storage/storage.ts';
+import { saveMultiplayerStats, saveStats } from '../storage/storage.ts';
 import { HomePage } from './HomePage.tsx';
 
 /** Renders Home in a router. */
@@ -45,6 +45,28 @@ describe('HomePage', () => {
     expect(stats).toHaveTextContent('Best1:01');
     expect(stats).toHaveTextContent('Average1:15');
     expect(stats).toHaveTextContent('Solved12');
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+  });
+
+  it('shows solo and multiplayer stats together once there are multiplayer finishes', () => {
+    saveStats({ solved: 12, bestMs: 61_900, recentMs: [70_000, 80_000] });
+    saveMultiplayerStats({ solved: 3, bestMs: 42_300, recentMs: [42_300, 50_000, 57_700] });
+    renderHome();
+    const table = screen.getByRole('table', { name: 'Your stats' });
+    const headers = within(table).getAllByRole('columnheader');
+    expect(headers.map((h) => h.textContent)).toEqual(['Best', 'Average', 'Solved']);
+    const rows = within(table).getAllByRole('row').slice(1);
+    expect(rows.map((r) => r.textContent)).toEqual(['Solo1:011:1512', 'Multiplayer0:420:503']);
+    expect(within(rows[1]!).getByRole('rowheader')).toHaveTextContent('Multiplayer');
+  });
+
+  it('shows the multiplayer stats on their own before any solo solve', () => {
+    saveMultiplayerStats({ solved: 1, bestMs: 42_300, recentMs: [42_300] });
+    renderHome();
+    const rows = within(screen.getByRole('table', { name: 'Your stats' }))
+      .getAllByRole('row')
+      .slice(1);
+    expect(rows.map((r) => r.textContent)).toEqual(['Multiplayer0:420:421']);
   });
 
   describe('Install app', () => {

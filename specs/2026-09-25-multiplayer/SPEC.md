@@ -366,7 +366,7 @@ Tabs are independent (§2), so everything about a seat is kept in **session stor
 - `cranny.multiplayerRound.v1 = { room, round, version, seed, revealedAt, orientations, placements, finishedMs | null }` (**session** storage): this tab's board for the multiplayer round in progress, saved after every change like the solo round. Tabs in different rooms can't overwrite each other's boards, and it is separate from `cranny.round.v1`, so it never overwrites a solo round in progress. It is restored through `resumeRound` (which re-checks every placement) only if the snapshot says the same round is still being played and you're a participant, and cleared when that round ends.
 - **Duplicated tabs:** the browser's "Duplicate tab" copies session storage, which would give two tabs the same seat. So each tab holds a **Web Lock** named `cranny-seat:<playerId>` (`navigator.locks.request` with `ifAvailable: true`) for as long as it's in the room. If the lock is already held when a tab starts, the tab discards the copied seat and board and joins as a new player. The browser releases the lock when a tab closes or crashes, so a reload gets it back. Where Web Locks isn't supported, the check is skipped and a duplicated tab shares the seat; that is accepted.
 - `cranny.multiplayerPrefs.v1 = { hideProgress }` (**local** storage): the Hide progress choice (§9).
-- Multiplayer solves **don't** count toward solo stats (`cranny.stats.v1`).
+- Multiplayer solves **don't** count toward solo stats (`cranny.stats.v1`). They have their own, `cranny.multiplayerStats.v1` (specs/2026-09-26-multiplayer-stats/SPEC.md).
 - Everything read back is validated, as today.
 
 ## 11. Security and privacy
