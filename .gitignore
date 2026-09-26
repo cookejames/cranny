@@ -14,3 +14,6 @@ infra/backend.hcl
 .env
 .env.local
 .env.*.local
+
+# Claude Code git worktrees
+.claude/worktrees/
