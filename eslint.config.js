@@ -4,7 +4,7 @@ import prettier from 'eslint-config-prettier';
 import reactHooks from 'eslint-plugin-react-hooks';
 
 export default tseslint.config(
-  { ignores: ['**/dist/**', '**/coverage/**', 'design/**'] },
+  { ignores: ['**/dist/**', '**/coverage/**', 'design/**', '.claude/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
