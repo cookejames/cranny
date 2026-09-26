@@ -1,0 +1,104 @@
+# Posts `terraform plan` on pull requests that change infra/ or the security headers, as one comment
+# updated on each push. Read-only: the plan role can't change anything, and the plan doesn't take
+# the state lock. specs/2026-09-26-ci-deploy/SPEC.md §4.
+name: Terraform plan
+
+on:
+  pull_request:
+    paths:
+      - 'infra/**'
+      # infra/cdn.tf reads it into CloudFront's response headers policy.
+      - 'apps/web/security-headers.json'
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+concurrency:
+  group: terraform-plan-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  plan:
+    # Fork PRs get no OIDC token, so they can't plan.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: 1.16.4
+          terraform_wrapper: false
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_PLAN_ROLE_ARN }}
+          aws-region: eu-west-2
+      - run: terraform fmt -check -recursive
+      - run: terraform init -input=false -backend-config="bucket=$TF_STATE_BUCKET" -backend-config="region=eu-west-2"
+        env:
+          TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+      - run: terraform validate
+      # Carry on when the plan fails, so the comment shows why; the last step fails the job.
+      - id: plan
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          terraform plan -input=false -lock=false -no-color -out=tfplan 2>&1 | tee plan.log
+          terraform show -no-color tfplan > plan.txt
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PLAN_OUTCOME: ${{ steps.plan.outcome }}
+        with:
+          script: |
+            const fs = require('node:fs');
+            const marker = '<!-- terraform-plan -->';
+            const succeeded = process.env.PLAN_OUTCOME === 'success';
+
+            let output = fs.readFileSync(succeeded ? 'infra/plan.txt' : 'infra/plan.log', 'utf8');
+            // A comment holds at most 65,536 characters.
+            const limit = 60000;
+            if (output.length > limit) {
+              output = output.slice(0, limit) + '\n… (truncated: the full plan is in the workflow run)';
+            }
+
+            const summary = succeeded
+              ? (output.match(/^(Plan: .*|No changes\..*)$/m)?.[1] ?? 'succeeded')
+              : '❌ failed';
+            const sha = context.payload.pull_request.head.sha.slice(0, 7);
+            const run = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = [
+              marker,
+              `### Terraform plan: ${summary}`,
+              '',
+              `<details${succeeded ? '' : ' open'}><summary>Show output</summary>`,
+              '',
+              '````',
+              output.trimEnd(),
+              '````',
+              '',
+              '</details>',
+              '',
+              `For ${sha} · [workflow run](${run})`,
+            ].join('\n');
+
+            const params = { owner: context.repo.owner, repo: context.repo.repo };
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              ...params,
+              issue_number: context.issue.number,
+            });
+            const previous = comments.find(
+              (comment) => comment.user?.type === 'Bot' && comment.body?.startsWith(marker),
+            );
+            if (previous) {
+              await github.rest.issues.updateComment({ ...params, comment_id: previous.id, body });
+            } else {
+              await github.rest.issues.createComment({ ...params, issue_number: context.issue.number, body });
+            }
+      - if: steps.plan.outcome != 'success'
+        run: |
+          echo "terraform plan failed; see the Plan step or the PR comment." >&2
+          exit 1
