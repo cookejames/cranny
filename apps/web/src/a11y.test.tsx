@@ -156,6 +156,16 @@ describe('accessibility', () => {
       expect(await check()).toEqual([]);
     });
 
+    it('the lobby, with a disconnected player', async () => {
+      const room = await harness.createRoom();
+      await harness.addPlayer(room, TEAL, 'Teal Otter');
+      const rose = await harness.addPlayer(room, 'C'.repeat(22), 'Rose Lynx');
+      await rose.close();
+      await settle(200);
+      expect(screen.getByText('disconnected')).toBeInTheDocument();
+      expect(await check()).toEqual([]);
+    });
+
     it('the leave confirmation', async () => {
       await harness.createRoom();
       fireEvent.click(screen.getByRole('button', { name: 'Leave the room' }));

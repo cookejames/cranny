@@ -1,4 +1,6 @@
 .home {
+  /* The decorative board's largest size (HomePage.tsx). */
+  --board-cap: min(300px, var(--column-width) - 40px);
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -51,6 +53,22 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+/*
+ * Desktops (a mouse, not a touchscreen): the showcase stops growing at the board's largest size,
+ * so the stats, Play and Multiplayer follow the board directly and the spare height goes below
+ * them. Phones keep them at the bottom, in thumb reach, as designed. Short windows still shrink
+ * the board, since the showcase keeps its flex sizing under the cap.
+ */
+@media (hover: hover) and (pointer: fine) {
+  .showcase {
+    max-height: var(--board-cap);
+  }
+
+  .bottom {
+    margin-top: 0;
+  }
 }
 
 .stats {

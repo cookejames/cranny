@@ -15,10 +15,11 @@ import styles from './HomePage.module.css';
  * height left over once everything else on Home is laid out (`100cqh` of the showcase, a size
  * container that fills the spare space), so Home fits a short screen (an iPhone SE) whichever of
  * the stats and Multiplayer are showing. The board is never smaller than 120 px: below that the
- * page scrolls instead (HomePage.module.css).
+ * page scrolls instead (HomePage.module.css). `--board-cap` (300 px, or less in a narrow column)
+ * is defined there too, because on desktops the showcase stops growing at it.
  */
 const showcaseStyle = {
-  '--board-size': 'min(300px, 100cqh, var(--column-width) - 40px)',
+  '--board-size': 'min(var(--board-cap), 100cqh)',
 } as CSSProperties;
 
 /** Best and Average as shown on Home: whole seconds, or a dash before the first solve. */
