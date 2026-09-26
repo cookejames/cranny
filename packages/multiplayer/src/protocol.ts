@@ -1,4 +1,5 @@
 import { isValidSeed } from '@cranny/engine';
+import { isBoardCode, type BoardCode } from './board.ts';
 import { isCleanPlayerName, isValidRoomName } from './names.ts';
 import { isPlayerId } from './random.ts';
 import { MAX_SEATS, PIECE_COUNT } from './rules.ts';
@@ -45,7 +46,16 @@ export type RoundOutcome = 'finished' | 'dnf' | 'sat-out';
 
 export type RoundResult = {
   number: number;
-  places: { id: PlayerId; ms: number | null; points: number; outcome: RoundOutcome }[];
+  /** The round's grid; absent from hosts older than specs/2026-09-26-player-grids. */
+  grid?: { version: number; seed: number };
+  places: {
+    id: PlayerId;
+    ms: number | null;
+    points: number;
+    outcome: RoundOutcome;
+    /** The player's board when the round ended, once they have sent it. */
+    board?: BoardCode;
+  }[];
 };
 
 export type RoomSnapshot = {
@@ -73,6 +83,8 @@ export type ClientMessage =
   | { type: 'ready'; ready: boolean }
   | { type: 'progress'; round: number; placed: number }
   | { type: 'finished'; round: number; ms: number }
+  /** Sent after the round ends (specs/2026-09-26-player-grids/SPEC.md §3.3). */
+  | { type: 'board'; round: number; board: BoardCode }
   | { type: 'leave' };
 
 /** What the host sends (SPEC §5.2). A `reject` goes to everyone but only `to` acts on it. */
@@ -145,6 +157,10 @@ function parseMessage(raw: Record<string, unknown>): Message | null {
       return isCount(raw.round) && isDuration(raw.ms)
         ? { type: 'finished', round: raw.round, ms: raw.ms }
         : null;
+    case 'board':
+      return isCount(raw.round) && isBoardCode(raw.board)
+        ? { type: 'board', round: raw.round, board: [...raw.board] }
+        : null;
     case 'leave':
       return { type: 'leave' };
     case 'snapshot': {
@@ -208,9 +224,8 @@ function parseRound(raw: unknown): Round | null {
   }
   let grid: Round['grid'] = null;
   if (raw.grid !== null) {
-    if (!isRecord(raw.grid) || !isCount(raw.grid.version) || raw.grid.version < 1) return null;
-    if (typeof raw.grid.seed !== 'number' || !isValidSeed(raw.grid.seed)) return null;
-    grid = { version: raw.grid.version, seed: raw.grid.seed };
+    grid = parseGrid(raw.grid);
+    if (!grid) return null;
   }
   const participants = parseIds(raw.participants);
   const ready = parseIds(raw.ready);
@@ -235,6 +250,13 @@ function parseRound(raw: unknown): Round | null {
     revealInMs,
     closesInMs,
   };
+}
+
+/** A validated grid reference (version and seed), or null. */
+function parseGrid(raw: unknown): { version: number; seed: number } | null {
+  if (!isRecord(raw) || !isCount(raw.version) || raw.version < 1) return null;
+  if (typeof raw.seed !== 'number' || !isValidSeed(raw.seed)) return null;
+  return { version: raw.version, seed: raw.seed };
 }
 
 /** A list of unique player ids, or null. */
@@ -279,9 +301,20 @@ function parseResult(raw: unknown): RoundResult | undefined {
     if (!(p.ms === null || isDuration(p.ms)) || !OUTCOMES.includes(p.outcome as string)) {
       return undefined;
     }
-    places.push({ id: p.id, ms: p.ms, points: p.points, outcome: p.outcome as RoundOutcome });
+    if (p.board !== undefined && !isBoardCode(p.board)) return undefined;
+    const place: RoundResult['places'][number] = {
+      id: p.id,
+      ms: p.ms,
+      points: p.points,
+      outcome: p.outcome as RoundOutcome,
+    };
+    if (p.board !== undefined) place.board = [...p.board];
+    places.push(place);
   }
-  return unique(places.map((p) => p.id)) ? { number: raw.number, places } : undefined;
+  if (!unique(places.map((p) => p.id))) return undefined;
+  if (raw.grid === undefined) return { number: raw.number, places };
+  const grid = parseGrid(raw.grid);
+  return grid ? { number: raw.number, grid, places } : undefined;
 }
 
 /** A countdown's remaining time: null, or a duration of at most an hour; undefined if invalid. */

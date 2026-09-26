@@ -6,33 +6,33 @@
 
 ## Phase 1 — Protocol (`packages/multiplayer`, §3)
 
-- [ ] **T1.1 Board codec.** `src/board.ts`: `encodeBoard`, `decodeBoard`, `isBoardCode`, all exported from `src/index.ts`, with tests in `board.test.ts`.
-- [ ] **T1.2 Protocol.**
+- [x] **T1.1 Board codec.** `src/board.ts`: `encodeBoard`, `decodeBoard`, `isBoardCode`, all exported from `src/index.ts`, with tests in `board.test.ts`.
+- [x] **T1.2 Protocol.**
   - In `protocol.ts`, add `RoundResult.grid?` and `places[].board?`, and the `board` client message.
   - Parse and validate them in `parseMessage` and `parseResult`.
   - Add tests.
-- [ ] **T1.3 Reducer.**
+- [x] **T1.3 Reducer.**
   - In `room.ts`, `endRound` records `grid`.
   - The `board` intent follows the §3.4 rules.
   - Add tests.
-- [ ] **T1.4 Client.**
+- [x] **T1.4 Client.**
   - Add `RoomClient.reportBoard`.
   - `board` is sent and resent through `reconcile`, and a host applies its own board when the round ends.
   - Add tests.
 
 ## Phase 2 — Screens (`apps/web`, §4, §5)
 
-- [ ] **T2.1 Report the board.**
+- [x] **T2.1 Report the board.**
   - `RoomRound.tsx` calls `client.reportBoard` after every board change.
   - `initialBoard` keeps the saved placements after a finish.
-- [ ] **T2.2 Grid modal.**
+- [x] **T2.2 Grid modal.**
   - Add `src/multiplayer/GridDialog.tsx`, following the `LeaveDialog` pattern: ×, Escape and backdrop close it, and the `Board` inside is read-only.
   - Add its styles to `Room.module.css`.
-- [ ] **T2.3 Grid button.** `RoundResults` in `Lobby.tsx` gets the icon button, and `Lobby` holds the open player.
-- [ ] **T2.4 Tests.**
+- [x] **T2.3 Grid button.** `RoundResults` in `Lobby.tsx` gets the icon button and holds which grid is open.
+- [x] **T2.4 Tests.**
   - The `Room.test.tsx` and `a11y.test.tsx` cases in §6.
   - _Done when:_ `pnpm lint && pnpm typecheck && pnpm test && pnpm format:check` pass.
-- [ ] **T2.5 CLAUDE.md.** Add a line to the multiplayer bullet: boards are only shared after a round, in `lastResult`.
+- [x] **T2.5 CLAUDE.md.** Add a line to the multiplayer bullet: boards are only shared after a round, in `lastResult`.
 
 ## Phase 3 — Check
 
