@@ -72,8 +72,16 @@ function nearlySolved(grid: RoundGrid, at: number): RoundState | null {
   return resumeRound(layout, at, orientations, placements);
 }
 
-/** The board this tab starts the round with, and whether it had already finished. */
-type Start = { round: RoundState; finishedMs: number | null };
+/**
+ * The board this tab starts the round with, and whether it had already finished. A finished
+ * round starts from an empty board (the waiting view replaces it), so `finishedPlacements` keeps
+ * the finished board to report after the round (specs/2026-09-26-player-grids).
+ */
+type Start = {
+  round: RoundState;
+  finishedMs: number | null;
+  finishedPlacements: RoundState['board']['placements'] | null;
+};
 
 /**
  * The board for a round: this tab's saved board for the same round if there is one
@@ -97,11 +105,17 @@ function initialBoard({
     saved.version === grid.version &&
     saved.seed === grid.seed;
   if (saved && same) {
-    if (saved.finishedMs !== null) return { round: newRound(layout), finishedMs: saved.finishedMs };
+    if (saved.finishedMs !== null) {
+      return {
+        round: newRound(layout),
+        finishedMs: saved.finishedMs,
+        finishedPlacements: saved.placements,
+      };
+    }
     const resumed = resumeRound(layout, saved.revealedAt, saved.orientations, saved.placements);
-    if (resumed) return { round: resumed, finishedMs: null };
+    if (resumed) return { round: resumed, finishedMs: null, finishedPlacements: null };
   }
-  return { round: newRound(layout), finishedMs: null };
+  return { round: newRound(layout), finishedMs: null, finishedPlacements: null };
 }
 
 /** Whether the player asked for less motion. */
@@ -176,6 +190,12 @@ export function RoomRound({
   useEffect(() => {
     if (round.status === 'playing' && !ended) client.reportProgress(number, placed);
   }, [client, number, placed, round.status, ended]);
+
+  // Hand the board to the client after every change; it goes to the room once the round is over.
+  const placements = start.finishedPlacements ?? round.board.placements;
+  useEffect(() => {
+    client.reportBoard(number, placements);
+  }, [client, number, placements]);
 
   // The drop that fills the grid finishes the round for this player, and counts once toward
   // their multiplayer stats (specs/2026-09-26-multiplayer-stats/SPEC.md §2). A board restored

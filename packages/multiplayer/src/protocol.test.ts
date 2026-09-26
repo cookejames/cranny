@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { BoardCode } from './board.ts';
 import {
   decodeMessage,
   encodeMessage,
@@ -15,6 +16,10 @@ import { seededRandom } from './testing/random.ts';
 const random = seededRandom(3);
 const ids = Array.from({ length: 17 }, () => randomPlayerId(random));
 const [A, B, C] = ids as [string, string, string];
+
+/** A full board code and a partial one. */
+const FULL: BoardCode = [0, 17, 42, 99, 150, 201, 250, 280, 287];
+const PARTIAL: BoardCode = [3, null, null, 64, null, null, null, 7, null];
 
 /** A valid mid-round snapshot for three players. */
 function snapshot(): RoomSnapshot {
@@ -44,9 +49,10 @@ function snapshot(): RoomSnapshot {
     },
     lastResult: {
       number: 2,
+      grid: { version: 1, seed: 654321 },
       places: [
-        { id: A, ms: 50_000, points: 5, outcome: 'finished' },
-        { id: B, ms: null, points: 0, outcome: 'dnf' },
+        { id: A, ms: 50_000, points: 5, outcome: 'finished', board: FULL },
+        { id: B, ms: null, points: 0, outcome: 'dnf', board: PARTIAL },
         { id: C, ms: null, points: 0, outcome: 'sat-out' },
       ],
     },
@@ -65,6 +71,8 @@ describe('decodeMessage', () => {
     { type: 'progress', round: 2, placed: 0 },
     { type: 'progress', round: 2, placed: 9 },
     { type: 'finished', round: 2, ms: 45_012.3 },
+    { type: 'board', round: 2, board: FULL },
+    { type: 'board', round: 2, board: PARTIAL },
     { type: 'leave' },
     { type: 'snapshot', snapshot: snapshot() },
     { type: 'reject', to: B, reason: 'full' },
@@ -130,6 +138,13 @@ describe('decodeMessage', () => {
     ['a reject to a bad id', { ...envelope, type: 'reject', to: 'nobody', reason: 'full' }],
     ['an unknown reject reason', { ...envelope, type: 'reject', to: B, reason: 'rude' }],
     ['a snapshot without a snapshot', { ...envelope, type: 'snapshot' }],
+    ['a board without a board', { ...envelope, type: 'board', round: 1 }],
+    ['a short board', { ...envelope, type: 'board', round: 1, board: [1, 2] }],
+    [
+      'a board value too big',
+      { ...envelope, type: 'board', round: 1, board: [288, ...PARTIAL.slice(1)] },
+    ],
+    ['a board for a bad round', { ...envelope, type: 'board', round: -1, board: FULL }],
   ])('rejects %s', (_, raw) => {
     expect(decodeMessage(raw, A)).toMatchObject({ ok: false });
   });
@@ -186,6 +201,16 @@ describe('parseSnapshot', () => {
     expect(parseSnapshot(wire(s))).toEqual(s);
   });
 
+  it('accepts a result without a grid or boards, as older hosts send', () => {
+    const s = snapshot();
+    delete s.lastResult!.grid;
+    for (const p of s.lastResult!.places) delete p.board;
+    const parsed = parseSnapshot(wire(s));
+    expect(parsed).toEqual(s);
+    expect(parsed!.lastResult).not.toHaveProperty('grid');
+    expect(parsed!.lastResult!.places[0]).not.toHaveProperty('board');
+  });
+
   const breaks: [string, (s: RoomSnapshot) => void][] = [
     ['a future protocol', (s) => ((s as { protocol: number }).protocol = 2)],
     ['a non-canonical room', (s) => (s.room = 'Amber Otter')],
@@ -215,6 +240,9 @@ describe('parseSnapshot', () => {
       'an unknown outcome',
       (s) => ((s.lastResult!.places[0] as { outcome: string }).outcome = 'won'),
     ],
+    ['a malformed board', (s) => (s.lastResult!.places[0]!.board = [1, 2, 3])],
+    ['a result grid with a bad seed', (s) => (s.lastResult!.grid = { version: 1, seed: -1 })],
+    ['a null result grid', (s) => ((s.lastResult as { grid: unknown }).grid = null)],
     ['a missing round', (s) => delete (s as Partial<RoomSnapshot>).round],
   ];
 
@@ -237,6 +265,7 @@ describe('parseSnapshot', () => {
       ms: 123_456.789,
       points: 1,
       outcome: 'finished',
+      board: [287, 287, 287, 287, 287, 287, 287, 287, 287],
     }));
     const size = utf8Length(JSON.stringify(encodeMessage(A, { type: 'snapshot', snapshot: s })));
     expect(size).toBeLessThan(MAX_MESSAGE_BYTES * 0.75);

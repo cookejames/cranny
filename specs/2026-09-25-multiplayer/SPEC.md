@@ -144,6 +144,8 @@ type RoomSnapshot = {
 };
 ```
 
+`RoundResult` also carries the round's `grid` and each participant's `board`, sent after the round ends: `specs/2026-09-26-player-grids/`.
+
 "Present" isn't part of the state. It comes from transport presence (§6.2), which every client sees for itself.
 
 ### 5.2 Messages
@@ -158,6 +160,7 @@ Every message is JSON with `protocol: 1`, a `type`, and the sender's `from: Play
 | client → host   | `progress` | `round`, `placed` (0–9)              | My board changed                                                 |
 | client → host   | `finished` | `round`, `ms`                        | I filled the grid; my stopwatch read `ms`                        |
 | client → host   | `leave`    | —                                    | I'm leaving for good; remove my seat and score                   |
+| client → host   | `board`    | `round`, `board`                     | My board when the round ended (`specs/2026-09-26-player-grids/`) |
 | host → everyone | `snapshot` | `RoomSnapshot`                       | The whole current state                                          |
 | host → one      | `reject`   | `to`, `reason: 'full' \| 'protocol'` | You can't join                                                   |
 
@@ -333,7 +336,7 @@ API Gateway WebSocket API + Lambda + DynamoDB (connections by channel). `$connec
 - The player list shows each seat's name, total score, a ready tick and an "away" marker for absent seats, with your own row marked "You" and your name editable in place. (Absent seats now show a disconnected icon and a "disconnected" label: `specs/2026-09-26-disconnected-marker/`.)
 - A **Ready** toggle (primary). It is disabled with "Waiting for another player" while you're alone.
 - The ready countdown, when running: "Starting in 0:24 · 1 player not ready".
-- After a round: the **round results** (placings, time, points, outcome), then the **totals**, sorted by score. **Play another** is the Ready button; **Finish** leaves the room and goes Home, after a confirmation.
+- After a round: the **round results** (placings, time, points, outcome), then the **totals**, sorted by score. **Play another** is the Ready button; **Finish** leaves the room and goes Home, after a confirmation. (Each result row has a grid button that shows that player's board: `specs/2026-09-26-player-grids/`.)
 - **Leave confirmation:** a modal dialog: "Leave amber-otter-quilt? You'll leave the game and your score will be removed from the scoreboard. If you rejoin, you'll start again from 0." The buttons are **Leave** and **Stay**, with Stay focused; Escape or tapping outside also means Stay. On Leave, the client sends `leave`, waits for a snapshot without its seat (at most 2 s), closes the connection, deletes its seat and any saved multiplayer board (§10) and goes Home. Closing the tab or navigating away with the browser doesn't show the dialog and isn't a leave: the seat stays on the scoreboard as "away" with its score (§2).
 
 ### Room: countdown and playing

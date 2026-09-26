@@ -1,4 +1,6 @@
+import type { Placement } from '@cranny/engine';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { encodeBoard } from './board.ts';
 import { HELLO_RETRY_MS, HOST_FALLBACK_MS, RoomClient, SNAPSHOT_INTERVAL_MS } from './client.ts';
 import { isDirectoryError, type RoomTicket } from './directory.ts';
 import { encodeMessage, type PlayerId } from './protocol.ts';
@@ -86,6 +88,11 @@ function connectionOf(self: PlayerId): FakeConnection {
 /** The room state a client sees. */
 const stateOf = (client: RoomClient) => client.view().room!;
 
+/** A one-piece board: the Single at `origin`. */
+const single = (origin: number) => ({
+  M1: { origin, orientation: { rot: 0, flip: false } } satisfies Placement,
+});
+
 /** Readies everyone and runs the 3-2-1, so the round is being played. */
 async function playRound(players: RoomClient[]) {
   for (const p of players) p.setReady(true);
@@ -131,8 +138,17 @@ describe('simulations', () => {
     for (const p of [a!, b!, c!]) expect(stateOf(p).round.status).toBe('playing');
 
     b!.reportProgress(1, 4);
+    for (const [p, origin] of [
+      [a!, 1],
+      [b!, 2],
+      [c!, 3],
+    ] as const) {
+      p.reportBoard(1, single(origin));
+    }
     await wait();
     expect(stateOf(c!).round.progress[B]).toBe(4);
+    // Boards stay private until the round ends.
+    expect(stateOf(c!).lastResult).toBeNull();
 
     c!.reportFinished(1, 51_000);
     await wait();
@@ -145,10 +161,11 @@ describe('simulations', () => {
     expectAgreement([a!, b!, c!]);
     expect(stateOf(b!).lastResult).toEqual({
       number: 1,
+      grid,
       places: [
-        { id: C, ms: 51_000, points: 5, outcome: 'finished' },
-        { id: A, ms: 50_000, points: 3, outcome: 'finished' },
-        { id: B, ms: null, points: 0, outcome: 'dnf' },
+        { id: C, ms: 51_000, points: 5, outcome: 'finished', board: encodeBoard(single(3)) },
+        { id: A, ms: 50_000, points: 3, outcome: 'finished', board: encodeBoard(single(1)) },
+        { id: B, ms: null, points: 0, outcome: 'dnf', board: encodeBoard(single(2)) },
       ],
     });
     expect(stateOf(b!).seats.map((s) => s.score)).toEqual([3, 0, 5]);
@@ -442,6 +459,72 @@ describe('resending', () => {
     await wait(2_000);
     expect(dropped).toBe(2);
     expect(stateOf(a!).round.status).not.toBe('lobby');
+  });
+});
+
+describe('boards after a round (specs/2026-09-26-player-grids)', () => {
+  /** Plays round 1 to the end: A and B finish, having reported `boards`. */
+  async function endRound(a: RoomClient, b: RoomClient) {
+    await playRound([a, b]);
+    a.reportBoard(1, single(1));
+    b.reportBoard(1, single(2));
+    a.reportFinished(1, 1_000);
+    b.reportFinished(1, 2_000);
+  }
+
+  /** The board in A's view of the last result for a player. */
+  const boardIn = (client: RoomClient, player: PlayerId) =>
+    stateOf(client).lastResult?.places.find((p) => p.id === player)?.board;
+
+  it('keeps the latest board, not the first', async () => {
+    const [a, b] = await room(B);
+    await playRound([a!, b!]);
+    b!.reportBoard(1, single(2));
+    b!.reportBoard(1, single(9));
+    a!.reportFinished(1, 1_000);
+    b!.reportFinished(1, 2_000);
+    await wait();
+    expect(boardIn(a!, B)).toEqual(encodeBoard(single(9)));
+  });
+
+  it('resends a board a snapshot shows was lost', async () => {
+    const [a, b] = await room(B);
+    const connection = connectionOf(B);
+    const publish = connection.publish.bind(connection);
+    let dropped = 0;
+    vi.spyOn(connection, 'publish').mockImplementation(async (m) => {
+      if ((m as { type: string }).type === 'board' && dropped++ === 0) return;
+      return publish(m);
+    });
+    await endRound(a!, b!);
+    await wait();
+    expect(boardIn(a!, B)).toBeUndefined();
+    await wait(2_000);
+    expect(dropped).toBe(2);
+    expect(boardIn(b!, B)).toEqual(encodeBoard(single(2)));
+  });
+
+  it('sends a board recorded after the round has ended', async () => {
+    const [a, b] = await room(B);
+    await playRound([a!, b!]);
+    a!.reportFinished(1, 1_000);
+    b!.reportFinished(1, 2_000);
+    await wait();
+    expect(boardIn(b!, A)).toBeUndefined();
+    a!.reportBoard(1, single(4)); // the host
+    b!.reportBoard(1, single(5));
+    await wait();
+    expect(boardIn(b!, A)).toEqual(encodeBoard(single(4)));
+    expect(boardIn(a!, B)).toEqual(encodeBoard(single(5)));
+  });
+
+  it('doesn’t send a board for an older round', async () => {
+    const [a, b] = await room(B);
+    await endRound(a!, b!);
+    await wait();
+    b!.reportBoard(0, single(7));
+    await wait(2_000);
+    expect(boardIn(a!, B)).toEqual(encodeBoard(single(2)));
   });
 });
 
