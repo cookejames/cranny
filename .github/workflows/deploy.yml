@@ -1,0 +1,75 @@
+# Deploys every merge to main: checks, then `terraform apply` if the plan has changes, then
+# scripts/deploy.sh. specs/2026-09-26-ci-deploy/SPEC.md §5.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Deploys queue rather than overlap or cancel one another: a half-finished apply or upload would
+# leave production inconsistent.
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    needs: checks
+    runs-on: ubuntu-latest
+    # The deploy role trusts only this environment, which only main may use.
+    environment:
+      name: production
+      url: https://cranny.cooke.ing
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      # No wrapper: it would add its own output to `terraform output -raw` in scripts/deploy.sh.
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: 1.16.4
+          terraform_wrapper: false
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: eu-west-2
+      - name: Terraform init
+        working-directory: infra
+        run: terraform init -input=false -backend-config="bucket=$TF_STATE_BUCKET" -backend-config="region=eu-west-2"
+        env:
+          TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+      # -detailed-exitcode: 0 means no changes, 2 means changes, anything else is an error.
+      - name: Terraform apply
+        working-directory: infra
+        run: |
+          set +e
+          terraform plan -input=false -detailed-exitcode -out=tfplan
+          code=$?
+          set -e
+          if [[ $code == 2 ]]; then
+            terraform apply -input=false tfplan
+          elif [[ $code != 0 ]]; then
+            exit "$code"
+          else
+            echo "No infrastructure changes."
+          fi
+      - name: Deploy
+        run: scripts/deploy.sh
+      - name: Smoke test
+        run: |
+          curl -sfI https://cranny.cooke.ing/g/1XDWT5H
+          curl -s -X POST https://cranny.cooke.ing/api/rooms/join \
+            -d '{"room":"no-such-room","self":"aaaaaaaaaaaaaaaaaaaaaa"}' | tee /dev/stderr | grep -q '"error":"not-found"'

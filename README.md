@@ -86,7 +86,7 @@ The site is a static build hosted on AWS:
 - Route 53 records in the existing `cooke.ing` hosted zone
 - for multiplayer, the rooms API (API Gateway and a Lambda, reached through CloudFront at `/api/rooms`) and [Ably](https://ably.com) for the realtime messages
 
-Everything is defined in [`infra/`](infra/) and deployed by hand from a developer machine.
+Everything is defined in [`infra/`](infra/). GitHub Actions deploys every merge to `main`, and a developer machine can still deploy by hand.
 
 ### What you need
 
@@ -97,7 +97,7 @@ Everything is defined in [`infra/`](infra/) and deployed by hand from a develope
 
 ### One-time setup
 
-**1. Create the Terraform state bucket.** A small separate configuration creates the S3 bucket that holds Terraform's state. It keeps its own state locally, in `infra/bootstrap/terraform.tfstate`, which is git-ignored. That's fine, because it only manages that one bucket.
+**1. Create the Terraform state bucket and the CI roles.** A small separate configuration creates the S3 bucket that holds Terraform's state, and the roles GitHub Actions uses (see [Continuous deployment](#continuous-deployment)). It keeps its own state locally, in `infra/bootstrap/terraform.tfstate`, which is git-ignored. That's fine: everything it manages can be re-imported if the file is lost. If the account already has GitHub's OIDC provider (`aws iam list-open-id-connect-providers`), import it first: `terraform -chdir=infra/bootstrap import aws_iam_openid_connect_provider.github <arn>`.
 
 ```bash
 terraform -chdir=infra/bootstrap init
@@ -121,7 +121,7 @@ The first apply takes around 5 to 15 minutes, mostly waiting for the certificate
 - the CloudFront distribution and its security headers policy
 - the certificate
 - the DNS records for `cranny.cooke.ing`
-- the rooms API: its Lambda, HTTP API and the SSM parameter for the Ably key
+- the rooms API: its Lambda and HTTP API
 
 **3. Give the rooms API an Ably key.** In the Ably dashboard, create an API key restricted to the channels `room:*` with the publish, subscribe, presence and channel-metadata capabilities, and with token revocation on. Then store it where the Lambda reads it:
 
@@ -129,9 +129,27 @@ The first apply takes around 5 to 15 minutes, mostly waiting for the certificate
 aws ssm put-parameter --name /cranny/ably-key --type SecureString --overwrite --value '<key>'
 ```
 
-Terraform creates the parameter but never sees the key, so it stays out of Terraform's state. Do the same again whenever you rotate the key.
+This creates the parameter the first time. Terraform deliberately doesn't manage it: if it did, it would read the key into its state, where CI could read it. Run the same command again whenever you rotate the key.
 
-### Deploying a new version
+### Continuous deployment
+
+GitHub Actions ([`.github/workflows/`](.github/workflows/)) does three things:
+
+- **Every pull request:** format check, lint, typecheck, test and build (`ci.yml`).
+- **Pull requests that change `infra/` or `apps/web/security-headers.json`:** `terraform plan`, posted as a comment on the PR and updated on each push (`terraform-plan.yml`).
+- **Every merge to `main`:** the same checks, then `terraform apply` if the plan has changes, then `scripts/deploy.sh` and a smoke test (`deploy.yml`). There's no approval step. To re-run a deploy, use _Run workflow_ on the Deploy workflow.
+
+The workflows reach AWS through GitHub's OIDC provider, as one of two roles defined in [`infra/bootstrap/ci.tf`](infra/bootstrap/ci.tf): `cranny-ci-plan` (read-only, for PR plans) and `cranny-ci-deploy` (only from the `production` environment, which only `main` can use). Neither has admin rights: each lists the actions Terraform and the deploy script need, scoped to Cranny's resources. The roles live in `infra/bootstrap/` so CI can't change its own permissions. **When `infra/` gains a new kind of resource**, add its actions to `ci.tf` and run `terraform -chdir=infra/bootstrap apply` before merging; the PR's plan comment shows any missing read permission as `AccessDenied`.
+
+One-time GitHub setup, after the one-time setup above:
+
+- An environment named `production`, with deployment branches limited to `main`.
+- Repository variables `AWS_DEPLOY_ROLE_ARN` and `AWS_PLAN_ROLE_ARN` (from `terraform -chdir=infra/bootstrap output`), and `TF_STATE_BUCKET` (the bucket in `infra/backend.hcl`).
+- Branch protection on `main` requiring the `checks` job.
+
+The details are in [`specs/2026-09-26-ci-deploy/`](specs/2026-09-26-ci-deploy/).
+
+### Deploying by hand
 
 Run:
 
@@ -157,5 +175,5 @@ curl -s -X POST https://cranny.cooke.ing/api/rooms/join \
 
 ### Changing the infrastructure
 
-- **Terraform:** edit `infra/*.tf`, then `terraform -chdir=infra plan` and `apply`.
+- **Terraform:** edit `infra/*.tf` in a pull request. Check the plan comment, and merging applies it. To apply by hand instead: `terraform -chdir=infra plan` and `apply`.
 - **Security headers:** these (CSP, HSTS, nosniff, Referrer-Policy) live in [`apps/web/security-headers.json`](apps/web/security-headers.json). Both CloudFront and `pnpm preview` read that file, so you can test a policy change locally against the production build before applying it. The plan fails if the file gains a header that CloudFront isn't set up to send.
