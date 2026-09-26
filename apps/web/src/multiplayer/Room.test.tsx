@@ -168,20 +168,36 @@ describe('the Multiplayer screen', () => {
 });
 
 describe('the lobby', () => {
-  it('lists players with scores, ready ticks, away markers and You', async () => {
+  it('lists players with scores, ready ticks, disconnected markers and You', async () => {
     const room = await createRoom();
-    const teal = await addPlayer(room, B, 'Teal Otter');
-    await addPlayer(room, C, 'Teal Otter');
+    await addPlayer(room, B, 'Teal Otter');
+    const rose = await addPlayer(room, C, 'Teal Otter');
     const list = screen.getByRole('list');
     expect(within(list).getAllByRole('listitem')).toHaveLength(3);
     expect(within(list).getByText('Teal Otter')).toBeInTheDocument();
     expect(within(list).getByText('Teal Otter 2')).toBeInTheDocument();
+    expect(within(list).getAllByText('Not ready')).toHaveLength(3);
+    await rose.close();
+    await settle(200);
+    const row = within(list).getByText('Teal Otter 2').closest('li')!;
+    expect(within(row).getByText('disconnected')).toBeInTheDocument();
+    expect(within(row).queryByText('Not ready')).not.toBeInTheDocument();
+    expect(within(list).getAllByText('Not ready')).toHaveLength(2);
+  });
+
+  it('swaps a ready tick for the disconnected mark when the player goes', async () => {
+    const room = await createRoom();
+    const teal = await addPlayer(room, B, 'Teal Otter');
+    await addPlayer(room, C, 'Rose Lynx');
+    const list = screen.getByRole('list');
     teal.setReady(true);
     await settle(200);
     expect(within(list).getAllByText('Ready')).toHaveLength(1);
     await teal.close();
     await settle(200);
-    expect(within(list).getByText('away')).toBeInTheDocument();
+    const row = within(list).getByText('Teal Otter').closest('li')!;
+    expect(within(list).queryByText('Ready')).not.toBeInTheDocument();
+    expect(within(row).getByText('disconnected')).toBeInTheDocument();
   });
 
   it('shows the ready countdown once more than half are ready', async () => {
