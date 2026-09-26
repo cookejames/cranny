@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router';
+import { startAnalytics } from './analytics/analytics.ts';
 import { AppRoutes } from './App.tsx';
 import { listenForInstall } from './install/install.ts';
 import { AppFrame } from './layout/AppFrame.tsx';
@@ -9,6 +10,7 @@ import './styles/global.css';
 
 // Before rendering: the browser may offer the install before React mounts.
 listenForInstall();
+startAnalytics();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

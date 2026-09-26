@@ -8,6 +8,7 @@ import {
   type Seat,
 } from '@cranny/multiplayer';
 import { useCallback, useState } from 'react';
+import { track } from '../analytics/analytics.ts';
 import { formatTime } from '../game/formatTime.ts';
 import { Toast } from '../play/Toast.tsx';
 import { roomShareText, SHARE_TOASTS, shareLink } from '../share/share.ts';
@@ -55,6 +56,7 @@ export function Lobby({ state, self, client, names, onLeave }: LobbyProps) {
   const share = async () => {
     const url = new URL(`/m/${state.room}`, window.location.origin).href;
     const result = await shareLink(roomShareText(state.room), url);
+    track({ name: 'link_shared', kind: 'room', result });
     setToast(SHARE_TOASTS[result] ?? null);
   };
 
