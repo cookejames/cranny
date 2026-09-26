@@ -16,10 +16,10 @@
 ## Phase 2 — Set up (by hand, when asked; §6)
 
 - [x] **T2.1 OIDC provider.** `aws iam list-open-id-connect-providers`; if GitHub's is there, `terraform -chdir=infra/bootstrap import aws_iam_openid_connect_provider.github <arn>`. (The account had none: nothing to import.)
-- [ ] **T2.2 Apply bootstrap.** `terraform -chdir=infra/bootstrap plan` shows only the CI roles, policies, the boundary and the provider; then `apply`.
+- [x] **T2.2 Apply bootstrap.** `terraform -chdir=infra/bootstrap plan` shows only the CI roles, policies, the boundary and the provider; then `apply`.
 - [x] **T2.3 Check the policies.** `aws accessanalyzer validate-policy` on `cranny-ci-read` and `cranny-ci-deploy` (no findings); `aws iam simulate-custom-policy` on the rendered read + deploy policies (before apply) allows e.g. `lambda:UpdateFunctionCode` on `cranny-rooms` and `cloudfront:CreateInvalidation`, and denies `iam:AttachRolePolicy` on `cranny-ci-deploy`, `iam:DeleteRolePermissionsBoundary` on `cranny-rooms`, `s3:GetObject` on another bucket, `ssm:GetParameter` and `kms:Decrypt` for the Ably key, and `s3:GetObjectVersion` on the state.
-- [ ] **T2.4 Apply infra.** `terraform -chdir=infra plan` shows only the boundary added to `cranny-rooms` and `aws_ssm_parameter.ably_key` no longer managed (not destroyed); `apply`. Must happen before CI's first plan, which can't read the parameter. Then `terraform state list` has no `aws_ssm_parameter`, `aws ssm get-parameter --name /cranny/ably-key` still finds it, and the README's rooms API smoke test still answers `not-found` (the Lambda can still read the key through the boundary).
-- [ ] **T2.5 GitHub.**
+- [ ] **T2.4 Apply infra.** (Applied; the rooms API smoke test is still to run.) `terraform -chdir=infra plan` shows only the boundary added to `cranny-rooms` and `aws_ssm_parameter.ably_key` no longer managed (not destroyed); `apply`. Must happen before CI's first plan, which can't read the parameter. Then `terraform state list` has no `aws_ssm_parameter`, `aws ssm get-parameter --name /cranny/ably-key` still finds it, and the README's rooms API smoke test still answers `not-found` (the Lambda can still read the key through the boundary).
+- [ ] **T2.5 GitHub.** (Environment and variables done; requiring `checks` on `main` is left for after merge.)
   ```bash
   gh api -X PUT repos/cookejames/cranny/environments/production \
     -F 'deployment_branch_policy[protected_branches]=false' -F 'deployment_branch_policy[custom_branch_policies]=true'
