@@ -181,6 +181,12 @@ data "aws_iam_policy_document" "ci_deploy" {
     actions   = ["s3:PutObject", "s3:DeleteObject"]
     resources = ["${aws_s3_bucket.state.arn}/${local.state_key}", "${aws_s3_bucket.state.arn}/${local.state_key}.tflock"]
   }
+  # Releasing the lock reads it first, to check the lock ID is still this run's.
+  statement {
+    sid       = "StateLockRead"
+    actions   = ["s3:GetObject"]
+    resources = ["${aws_s3_bucket.state.arn}/${local.state_key}.tflock"]
+  }
   statement {
     sid = "SiteBucketWrite"
     actions = [
