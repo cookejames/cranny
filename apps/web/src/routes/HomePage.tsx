@@ -16,9 +16,10 @@ import styles from './HomePage.module.css';
  * container that fills the spare space), less the Install app button under it when that shows
  * (`--install-space`), so Home fits a short screen (an iPhone SE) whichever of the stats,
  * Multiplayer and Install app are showing. The board is never smaller than 120 px: below that
- * the page scrolls instead (HomePage.module.css).
+ * the page scrolls instead (HomePage.module.css). `--board-cap` (300 px, or less in a narrow
+ * column) is defined there too, because on desktops the showcase stops growing at it.
  */
-const boardSize = 'min(300px, 100cqh - var(--install-space), var(--column-width) - 40px)';
+const boardSize = 'min(var(--board-cap), 100cqh - var(--install-space))';
 
 /** The showcase's style without the Install app button. */
 const showcaseStyle = { '--board-size': boardSize, '--install-space': '0px' } as CSSProperties;
