@@ -138,7 +138,7 @@ export function MultiplayerPage({ directory }: { directory: RoomDirectory }) {
       setCreateError(result.error);
       return;
     }
-    track({ name: 'mp_room_created', customName: custom !== '' });
+    track({ name: 'mp_room_created', room: result.room, customName: custom !== '' });
     void navigate(`/m/${result.room}`);
   };
 
@@ -160,7 +160,7 @@ export function MultiplayerPage({ directory }: { directory: RoomDirectory }) {
       return;
     }
     handOff(result, self);
-    track({ name: 'mp_room_joined' });
+    track({ name: 'mp_room_joined', room });
     void navigate(`/m/${room}`);
   };
 

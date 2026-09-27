@@ -166,11 +166,11 @@ export function RoomRound({
     const reveal = () => {
       const solved = startSolved && nearlySolved(grid, at);
       dispatch(solved ? { type: 'replace', state: solved } : { type: 'start', at });
-      track({ name: 'mp_round_started', players });
+      track({ name: 'mp_round_started', room: state.room, players });
     };
     const timer = setTimeout(reveal, Math.max(0, at - Date.now()));
     return () => clearTimeout(timer);
-  }, [round.status, revealAt, ended, startSolved, grid, players]);
+  }, [round.status, revealAt, ended, startSolved, grid, players, state.room]);
 
   // Save the board after every change, and report progress while playing.
   const placed = placedCount(round);
@@ -205,8 +205,13 @@ export function RoomRound({
     if (finishedMs === null || recorded.current) return;
     recorded.current = true;
     saveMultiplayerStats(recordSolve(loadMultiplayerStats(), finishedMs).stats);
-    track({ name: 'mp_round_completed', players, duration: durationBucket(finishedMs) });
-  }, [finishedMs, players]);
+    track({
+      name: 'mp_round_completed',
+      room: state.room,
+      players,
+      duration: durationBucket(finishedMs),
+    });
+  }, [finishedMs, players, state.room]);
   useEffect(() => {
     if (finishedMs !== null && !ended) client.reportFinished(number, finishedMs);
   }, [client, number, finishedMs, ended]);

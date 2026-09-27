@@ -73,7 +73,7 @@ describe('track', () => {
     vi.stubEnv('VITE_POSTHOG_KEY', '');
     const { analyticsEnabled, track } = await freshAnalytics();
     expect(analyticsEnabled).toBe(false);
-    track({ name: 'mp_room_joined' });
+    track({ name: 'mp_room_joined', room: 'brave-otter' });
     await vi.dynamicImportSettled();
     expect(posthog.init).not.toHaveBeenCalled();
     expect(posthog.capture).not.toHaveBeenCalled();
@@ -102,9 +102,12 @@ describe('track', () => {
     vi.stubEnv('VITE_POSTHOG_KEY', 'phc_test');
     savePlayerName('Quiet Otter');
     const { track } = await freshAnalytics();
-    track({ name: 'mp_room_joined' });
+    track({ name: 'mp_room_joined', room: 'brave-otter' });
     await vi.waitFor(() =>
-      expect(posthog.capture).toHaveBeenCalledWith('mp_room_joined', { playerName: 'Quiet Otter' }),
+      expect(posthog.capture).toHaveBeenCalledWith('mp_room_joined', {
+        room: 'brave-otter',
+        playerName: 'Quiet Otter',
+      }),
     );
   });
 
@@ -114,7 +117,7 @@ describe('track', () => {
       throw new Error('boom');
     });
     const { track } = await freshAnalytics();
-    expect(() => track({ name: 'mp_room_joined' })).not.toThrow();
+    expect(() => track({ name: 'mp_room_joined', room: 'brave-otter' })).not.toThrow();
     await vi.waitFor(() => expect(posthog.capture).toHaveBeenCalled());
   });
 });
