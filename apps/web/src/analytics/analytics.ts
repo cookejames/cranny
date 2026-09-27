@@ -1,9 +1,11 @@
 import type { PostHog, PostHogConfig } from 'posthog-js';
 import { knownPlayerName } from '../multiplayer/playerName.ts';
+import type { ShareResult } from '../share/share.ts';
 
 // Cookieless usage analytics through PostHog (specs/2026-09-26-analytics/SPEC.md). Only the
 // events below are sent, each with the player's name if they have one (SPEC §2): no autocapture,
-// nothing stored on the device, and room and grid codes are scrubbed from URLs. `VITE_POSTHOG_KEY` is set for production builds only
+// nothing stored on the device, and room and grid codes are scrubbed from URLs. Multiplayer events
+// name their room in a `room` property instead. `VITE_POSTHOG_KEY` is set for production builds only
 // (`.env.production`); without it every function here does nothing. posthog-js is loaded with a
 // dynamic import once the browser is idle, so it stays out of the main bundle.
 
@@ -12,21 +14,19 @@ export type DurationBucket = '<1m' | '1-2m' | '2-5m' | '5-10m' | '10m+';
 
 /**
  * Every event the app sends. A new feature to count gets a member here; keep properties
- * low-cardinality and free of room names and grid codes. `track` adds the player's name.
+ * low-cardinality and free of grid codes. Multiplayer events carry the room's name as `room`;
+ * `track` adds the player's name.
  */
 export type AnalyticsEvent =
   | { name: 'solo_round_started'; shared: boolean }
   | { name: 'solo_round_completed'; shared: boolean; duration: DurationBucket }
-  | { name: 'mp_room_created'; customName: boolean }
-  | { name: 'mp_room_joined' }
-  | { name: 'mp_round_started'; players: number }
-  | { name: 'mp_round_completed'; players: number; duration: DurationBucket }
+  | { name: 'mp_room_created'; room: string; customName: boolean }
+  | { name: 'mp_room_joined'; room: string }
+  | { name: 'mp_round_started'; room: string; players: number }
+  | { name: 'mp_round_completed'; room: string; players: number; duration: DurationBucket }
   | { name: 'install_clicked'; platform: 'android' | 'ios' }
-  | {
-      name: 'link_shared';
-      kind: 'grid' | 'room';
-      result: 'shared' | 'copied' | 'cancelled' | 'failed';
-    };
+  | { name: 'link_shared'; kind: 'grid'; result: ShareResult }
+  | { name: 'link_shared'; kind: 'room'; room: string; result: ShareResult };
 
 /**
  * Where the SDK sends events: CloudFront forwards `/relay/*` to PostHog's EU ingestion and

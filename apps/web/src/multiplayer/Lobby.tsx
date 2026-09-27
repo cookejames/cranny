@@ -59,7 +59,7 @@ export function Lobby({ state, self, client, names, onLeave }: LobbyProps) {
   const share = async () => {
     const url = new URL(`/m/${state.room}`, window.location.origin).href;
     const result = await shareLink(roomShareText(state.room), url);
-    track({ name: 'link_shared', kind: 'room', result });
+    track({ name: 'link_shared', kind: 'room', room: state.room, result });
     setToast(SHARE_TOASTS[result] ?? null);
   };
 

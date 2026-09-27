@@ -14,7 +14,8 @@ Session recording, autocapture, heatmaps, error tracking, feature flags, surveys
 - `person_profiles: 'never'`: no person profiles, and `identify()` does nothing.
 - URLs are scrubbed before sending (`before_send`): room names become `/m/:room` (a room name is enough to join the room), grid codes `/g/:code`, and query strings and fragments are dropped. This applies to every property whose name contains `url`, `pathname` or `referrer`.
 - **Player name**: every event carries `playerName`, the name the player chose or was given for multiplayer (`knownPlayerName` in `src/multiplayer/playerName.ts`: this session's name, else the remembered one). It's left out for someone who has never had a name; a solo player isn't given a random one just for analytics. The user chose this knowing it makes the events personal data: names are free text, often a real name, and link a player's events across days, which the cookieless hash otherwise prevents.
-- Other event properties are low-cardinality and never name a room or grid.
+- **Room name**: multiplayer events (and room-link shares) carry the room's name as `room`, so plays can be grouped by room. The user chose this knowing a room name is enough to join the room while it's open. URLs are still scrubbed, so the name reaches PostHog only through this property.
+- Other event properties are low-cardinality and never name a grid.
 - No cookie banner is needed: nothing is stored on the device. There's no privacy notice either, by the user's decision.
 
 ## 3. Transport
@@ -33,16 +34,16 @@ Session recording, autocapture, heatmaps, error tracking, feature flags, surveys
 
 ## 5. Events
 
-| Event                  | When                                                | Properties                         |
-| ---------------------- | --------------------------------------------------- | ---------------------------------- |
-| `solo_round_started`   | Start pressed                                       | `shared`                           |
-| `solo_round_completed` | The drop that fills the grid (once, with the stats) | `shared`, `duration`               |
-| `mp_room_created`      | Create a room succeeded                             | `customName`                       |
-| `mp_room_joined`       | Join a room (the form) succeeded                    | —                                  |
-| `mp_round_started`     | This tab's reveal (not a reload mid-round)          | `players`                          |
-| `mp_round_completed`   | This tab filled the grid (once, with the stats)     | `players`, `duration`              |
-| `install_clicked`      | Install app pressed                                 | `platform` (`android` / `ios`)     |
-| `link_shared`          | Share grid or Share room link                       | `kind` (`grid` / `room`), `result` |
+| Event                  | When                                                | Properties                                         |
+| ---------------------- | --------------------------------------------------- | -------------------------------------------------- |
+| `solo_round_started`   | Start pressed                                       | `shared`                                           |
+| `solo_round_completed` | The drop that fills the grid (once, with the stats) | `shared`, `duration`                               |
+| `mp_room_created`      | Create a room succeeded                             | `room`, `customName`                               |
+| `mp_room_joined`       | Join a room (the form) succeeded                    | `room`                                             |
+| `mp_round_started`     | This tab's reveal (not a reload mid-round)          | `room`, `players`                                  |
+| `mp_round_completed`   | This tab filled the grid (once, with the stats)     | `room`, `players`, `duration`                      |
+| `install_clicked`      | Install app pressed                                 | `platform` (`android` / `ios`)                     |
+| `link_shared`          | Share grid or Share room link                       | `kind` (`grid` / `room`), `result`, `room` (rooms) |
 
 `duration` is a bucket: `<1m`, `1-2m`, `2-5m`, `5-10m`, `10m+`. Opening a room link directly (not through the Join form) isn't counted as `mp_room_joined`; `mp_round_started` counts those players once they play.
 
