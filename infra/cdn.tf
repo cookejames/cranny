@@ -59,22 +59,23 @@ data "aws_cloudfront_cache_policy" "optimized" {
   name = "Managed-CachingOptimized"
 }
 
-# Analytics proxy (specs/2026-09-26-analytics/SPEC.md): /relay/* goes to PostHog's EU cloud, so
-# the CSP's connect-src needs only 'self' and ad blockers don't recognise the requests. PostHog
-# serves everything at its root, so this function strips the prefix first.
-# Sends the old name's page requests to the new one. Only the default behaviour uses it: /api and
-# /relay stay served on the old name, so a page loaded before the move keeps working.
+# Sends the other names' page requests (the old name and www) to the site's own. Only the default
+# behaviour uses it: /api and /relay stay served on the old name, so a page loaded before the move
+# keeps working.
 resource "aws_cloudfront_function" "redirect_legacy" {
   name    = "cranny-redirect-legacy"
   runtime = "cloudfront-js-2.0"
-  comment = "301s ${var.legacy_domain_name} to ${var.domain_name}"
+  comment = "301s ${join(", ", local.redirect_hosts)} to ${var.domain_name}"
   code = templatefile("${path.module}/functions/redirect-legacy.js.tftpl", {
-    legacy_host = var.legacy_domain_name
-    target_host = var.domain_name
+    redirect_hosts = jsonencode(local.redirect_hosts)
+    target_host    = var.domain_name
   })
   publish = true
 }
 
+# Analytics proxy (specs/2026-09-26-analytics/SPEC.md): /relay/* goes to PostHog's EU cloud, so
+# the CSP's connect-src needs only 'self' and ad blockers don't recognise the requests. PostHog
+# serves everything at its root, so this function strips the prefix first.
 resource "aws_cloudfront_function" "strip_relay" {
   name    = "cranny-strip-relay"
   runtime = "cloudfront-js-2.0"
@@ -101,7 +102,7 @@ data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" {
 resource "aws_cloudfront_distribution" "site" {
   enabled             = true
   comment             = "Cranny"
-  aliases             = [var.domain_name, var.legacy_domain_name]
+  aliases             = concat([var.domain_name], local.redirect_hosts)
   default_root_object = "index.html"
   http_version        = "http2and3"
   is_ipv6_enabled     = true
