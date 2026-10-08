@@ -4,7 +4,7 @@ import { useEffect } from 'react';
  * The site's address, as index.html's canonical link, og:url, robots.txt and sitemap.xml give it
  * (specs/2026-10-08-seo/SPEC.md §3). `seo.test.ts` checks they all agree.
  */
-export const SITE_ORIGIN = 'https://cranny.cooke.ing';
+export const SITE_ORIGIN = 'https://playcranny.com';
 
 /**
  * Gives the current page its own tab title and canonical URL while it's mounted, then puts back
