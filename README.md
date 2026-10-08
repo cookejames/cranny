@@ -98,15 +98,47 @@ Everything is defined in [`infra/`](infra/). GitHub Actions deploys every merge 
 
 ### One-time setup
 
-**1. Create the Terraform state bucket and the CI roles.** A small separate configuration creates the S3 bucket that holds Terraform's state, and the roles GitHub Actions uses (see [Continuous deployment](#continuous-deployment)). It keeps its own state locally, in `infra/bootstrap/terraform.tfstate`, which is git-ignored. That's fine: everything it manages can be re-imported if the file is lost. If the account already has GitHub's OIDC provider (`aws iam list-open-id-connect-providers`), import it first: `terraform -chdir=infra/bootstrap import aws_iam_openid_connect_provider.github <arn>`.
+**1. Create the Terraform state bucket and the CI roles.** A small separate configuration creates the S3 bucket that holds Terraform's state, and the roles GitHub Actions uses (see [Continuous deployment](#continuous-deployment)). Its own state lives in that same bucket, under the key `bootstrap/terraform.tfstate`. CI's roles can't read or write that key, because this configuration defines CI's own permissions. If the account already has GitHub's OIDC provider (`aws iam list-open-id-connect-providers`), import it before the first apply: `terraform -chdir=infra/bootstrap import aws_iam_openid_connect_provider.github <arn>`.
+
+Both configurations use the same bucket, named in two git-ignored settings files (the bucket name contains the AWS account ID): `infra/backend.hcl` and `infra/bootstrap/backend.hcl`. Copy [`infra/backend.hcl.example`](infra/backend.hcl.example) and [`infra/bootstrap/backend.hcl.example`](infra/bootstrap/backend.hcl.example) and fill in the account ID, or generate them from the bootstrap's output.
+
+_Day to day, and on a fresh clone or a new git worktree_ (the bucket already exists, so the state is in S3 and nothing is re-created): write the two settings files, then
 
 ```bash
-terraform -chdir=infra/bootstrap init
+terraform -chdir=infra/bootstrap init -backend-config=backend.hcl
+terraform -chdir=infra/bootstrap plan
 terraform -chdir=infra/bootstrap apply
-terraform -chdir=infra/bootstrap output -raw backend_config > infra/backend.hcl
 ```
 
-`infra/backend.hcl` is git-ignored because the bucket name contains the AWS account ID. On a fresh clone, where the bucket already exists, copy [`infra/backend.hcl.example`](infra/backend.hcl.example) to `infra/backend.hcl` and fill in the account ID.
+_Starting from scratch_ (a new account, so there is no bucket yet). The bootstrap can't keep state in a bucket it hasn't created, so apply once with a local backend, then move the state into the bucket it made:
+
+```bash
+# 1. Swap the S3 backend for a local one. An override file replaces the backend block; it is git-ignored.
+printf 'terraform {\n  backend "local" {}\n}\n' > infra/bootstrap/backend_override.tf
+terraform -chdir=infra/bootstrap init
+terraform -chdir=infra/bootstrap apply
+# 2. Write the settings files for the bucket it created.
+terraform -chdir=infra/bootstrap output -raw backend_config > infra/backend.hcl
+cp infra/backend.hcl infra/bootstrap/backend.hcl
+# 3. Remove the override and move the state into the bucket (answer yes to the copy prompt).
+rm infra/bootstrap/backend_override.tf
+terraform -chdir=infra/bootstrap init -migrate-state -backend-config=backend.hcl
+```
+
+_Moving an existing local state into S3_ (a one-off, for anyone with an `infra/bootstrap/terraform.tfstate` from before the bootstrap used remote state). Run it in the checkout that holds that file:
+
+```bash
+terraform -chdir=infra/bootstrap output -raw backend_config > infra/bootstrap/backend.hcl   # or copy infra/backend.hcl
+terraform -chdir=infra/bootstrap init -migrate-state -backend-config=backend.hcl
+```
+
+Answer `yes` when Terraform asks to copy the existing state to the new backend. Then check it worked:
+
+- `terraform -chdir=infra/bootstrap plan` shows `No changes`.
+- `aws s3 ls s3://<bucket>/bootstrap/` lists `terraform.tfstate`.
+- Keep `infra/bootstrap/terraform.tfstate` as a backup until both checks pass and an ordinary `apply` has gone through the new backend, then delete it (and its `.backup`) so nobody applies from a stale copy. Terraform doesn't remove the old file itself, and once the backend is S3 it ignores it.
+
+If the migration is interrupted before the copy finishes, S3 holds either nothing or a complete state object (a single upload), and the local file is untouched: re-run it. If a lock is left behind (`Error acquiring the state lock`), check nobody else is running Terraform, then `terraform -chdir=infra/bootstrap force-unlock <lock id>`. Your own IAM identity needs read and write on `bootstrap/terraform.tfstate` and its `.tflock` object in the state bucket (admin rights cover it); the CI roles deliberately don't have it.
 
 **2. Create the hosting.**
 

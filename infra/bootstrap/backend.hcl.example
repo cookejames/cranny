@@ -1,0 +1,6 @@
+# Copy to backend.hcl (git-ignored) and fill in. It names the same bucket as ../backend.hcl, so
+# once the bucket exists you can also copy that file:
+#   cp infra/backend.hcl infra/bootstrap/backend.hcl
+# Then: terraform -chdir=infra/bootstrap init -backend-config=backend.hcl
+bucket = "cranny-terraform-state-<aws account id>"
+region = "eu-west-2"
