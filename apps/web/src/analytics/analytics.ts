@@ -25,6 +25,7 @@ export type AnalyticsEvent =
   | { name: 'mp_round_started'; room: string; players: number }
   | { name: 'mp_round_completed'; room: string; players: number; duration: DurationBucket }
   | { name: 'install_clicked'; platform: 'android' | 'ios' }
+  | { name: 'how_to_play_opened' }
   | { name: 'link_shared'; kind: 'grid'; result: ShareResult }
   | { name: 'link_shared'; kind: 'room'; room: string; result: ShareResult };
 

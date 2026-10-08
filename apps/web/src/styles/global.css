@@ -30,6 +30,33 @@ a {
   color: inherit;
 }
 
+/*
+ * The static intro in index.html (specs/2026-10-08-seo/SPEC.md §5), shown until React replaces it
+ * and to crawlers that don't run scripts. This stylesheet loads before the first paint, so it never
+ * shows unstyled. It follows AppFrame's column and Home's wordmark.
+ */
+.prerender {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 56px 20px 16px;
+  font-size: 17px;
+  line-height: 1.45;
+}
+
+.prerender h1 {
+  margin: 0 0 16px;
+  font-family: var(--font-display);
+  font-size: 60px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+}
+
+.prerender p {
+  margin: 0 0 12px;
+  color: var(--color-muted);
+}
+
 /* Hidden visually but still read by screen readers. */
 .visually-hidden {
   position: absolute;

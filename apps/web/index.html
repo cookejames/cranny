@@ -4,17 +4,67 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#F3EFE6" />
-    <meta name="description" content="Cranny: fill the grid with nine pieces, against the clock." />
+    <meta
+      name="description"
+      content="Cranny is a free block puzzle game: fit nine pieces into a 6×6 grid around seven blocked squares. Play solo against the clock, or race friends in multiplayer."
+    />
     <meta name="apple-mobile-web-app-title" content="Cranny" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <title>Cranny</title>
+    <title>Cranny – a quick block puzzle game</title>
+    <link rel="canonical" href="https://cranny.cooke.ing/" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Cranny" />
+    <meta property="og:title" content="Cranny – a quick block puzzle game" />
+    <meta
+      property="og:description"
+      content="Fit nine pieces into a 6×6 grid around seven blocked squares. Play solo against the clock, or race friends in multiplayer."
+    />
+    <meta property="og:url" content="https://cranny.cooke.ing/" />
+    <meta property="og:image" content="https://cranny.cooke.ing/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="A solved Cranny grid of coloured pieces beside the Cranny wordmark"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- A data block, never run, so the CSP's script-src 'self' doesn't apply to it. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "VideoGame",
+        "name": "Cranny",
+        "url": "https://cranny.cooke.ing/",
+        "description": "A free block puzzle game: fit nine pieces into a 6×6 grid around seven blocked squares, solo against the clock or racing friends in multiplayer.",
+        "image": "https://cranny.cooke.ing/og-image.png",
+        "genre": "Puzzle",
+        "gamePlatform": "Web browser",
+        "playMode": ["SinglePlayer", "MultiPlayer"],
+        "isAccessibleForFree": true,
+        "inLanguage": "en"
+      }
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Shown until the app starts, and to crawlers that don't run scripts. React replaces it. -->
+      <main class="prerender">
+        <h1>Cranny</h1>
+        <p>
+          Cranny is a quick block puzzle game. Each grid is a 6×6 board with seven blocked squares
+          and nine pieces to fit around them, from a long bar down to a single square. Rotate and
+          flip the pieces until every gap is filled. Play solo against the clock, or race friends on
+          the same grid in multiplayer.
+        </p>
+        <p><a href="/play">Play</a> · <a href="/how-to-play">How to play</a></p>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

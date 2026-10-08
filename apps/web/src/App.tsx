@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router';
 import { useRoomAdapters } from './multiplayer/RoomAdaptersContext.ts';
 import { GridPage } from './routes/GridPage.tsx';
 import { HomePage } from './routes/HomePage.tsx';
+import { HowToPlayPage } from './routes/HowToPlayPage.tsx';
 import { PlayRedirect } from './routes/PlayRedirect.tsx';
 
 // The multiplayer screens load on first use, so solo play doesn't download them.
@@ -24,6 +25,7 @@ export function AppRoutes() {
     <Suspense fallback={null}>
       <Routes>
         <Route path="/" element={<HomePage multiplayer={adapters !== null} />} />
+        <Route path="/how-to-play" element={<HowToPlayPage multiplayer={adapters !== null} />} />
         <Route path="/play" element={<PlayRedirect />} />
         <Route path="/g/:code" element={<GridPage />} />
         {adapters && (

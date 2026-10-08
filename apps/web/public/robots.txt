@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /relay/
+
+Sitemap: https://cranny.cooke.ing/sitemap.xml
