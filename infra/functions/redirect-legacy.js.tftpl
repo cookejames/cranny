@@ -1,10 +1,10 @@
-// CloudFront viewer-request function for the old name (infra/cdn.tf): a permanent redirect to the
-// same path and query on the new one. Terraform fills in the two hosts. CloudFront calls
+// CloudFront viewer-request function for the names that redirect (infra/cdn.tf): a permanent
+// redirect to the same path and query on the site's own name. Terraform fills in the hosts. CloudFront calls
 // `handler` itself; the runtime has no exports.
 function handler(event) {
   var request = event.request;
   var host = request.headers.host && request.headers.host.value;
-  if (host !== '${legacy_host}') {
+  if (${redirect_hosts}.indexOf(host) === -1) {
     return request;
   }
 

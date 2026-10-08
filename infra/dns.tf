@@ -5,6 +5,9 @@
 # The old name (legacy_domain_name) stays in its existing Route 53 zone, pointing at the same
 # distribution, which redirects it to the new name (functions/redirect-legacy.js.tftpl).
 locals {
+  # Names that 301 to domain_name (functions/redirect-legacy.js.tftpl) and need the certificate too.
+  redirect_hosts = [var.legacy_domain_name, "www.${var.domain_name}"]
+
   # ACM's validation records, keyed by the name they validate.
   validation_options = {
     for option in aws_acm_certificate.site.domain_validation_options : option.domain_name => option
@@ -16,7 +19,7 @@ locals {
       subdomain = trimsuffix(trimsuffix(option.resource_record_name, "."), ".${var.domain_name}")
       type      = option.resource_record_type
       content   = trimsuffix(option.resource_record_value, ".")
-    } if name == var.domain_name
+    } if endswith(name, var.domain_name)
   }
 }
 
@@ -49,7 +52,7 @@ resource "aws_route53_record" "caa_legacy" {
 resource "aws_acm_certificate" "site" {
   provider                  = aws.us_east_1
   domain_name               = var.domain_name
-  subject_alternative_names = [var.legacy_domain_name]
+  subject_alternative_names = local.redirect_hosts
   validation_method         = "DNS"
 
   # ACM checks CAA before issuing.
@@ -93,6 +96,14 @@ resource "porkbun_dns_record" "site" {
   domain    = var.domain_name
   subdomain = ""
   type      = "ALIAS"
+  content   = aws_cloudfront_distribution.site.domain_name
+}
+
+# www goes to the same distribution, which redirects it.
+resource "porkbun_dns_record" "www" {
+  domain    = var.domain_name
+  subdomain = "www"
+  type      = "CNAME"
   content   = aws_cloudfront_distribution.site.domain_name
 }
 
