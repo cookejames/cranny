@@ -107,6 +107,15 @@ resource "porkbun_dns_record" "www" {
   content   = aws_cloudfront_distribution.site.domain_name
 }
 
+# Proves ownership of the domain to Google Search Console, which checks it again from time to time:
+# removing it unverifies the site. The token isn't secret: anyone can read it from DNS.
+resource "porkbun_dns_record" "google_site_verification" {
+  domain    = var.domain_name
+  subdomain = ""
+  type      = "TXT"
+  content   = "google-site-verification=SaCH-RTXVfs74Kp6rGmJ1blhgksSluwng4lupGcMtK4"
+}
+
 resource "aws_route53_record" "site_legacy" {
   for_each = toset(["A", "AAAA"])
 
