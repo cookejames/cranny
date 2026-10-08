@@ -20,20 +20,20 @@ variable "github_subject_prefix" {
   default     = "repo:cookejames@2211370/cranny@1386290316"
 }
 
-variable "zone_name" {
-  description = "The Route 53 hosted zone the site's records live in (infra/variables.tf)."
+variable "legacy_zone_name" {
+  description = "The Route 53 hosted zone the old name's records live in (infra/variables.tf)."
   type        = string
   default     = "cooke.ing"
 }
 
-variable "domain_name" {
-  description = "The site's name (infra/variables.tf); CI may change only records for it."
+variable "legacy_domain_name" {
+  description = "The old name, which redirects to the new one (infra/variables.tf); CI may change only records for it."
   type        = string
   default     = "cranny.cooke.ing"
 }
 
 data "aws_route53_zone" "zone" {
-  name = var.zone_name
+  name = var.legacy_zone_name
 }
 
 locals {
@@ -245,7 +245,7 @@ data "aws_iam_policy_document" "ci_deploy" {
     actions   = ["acm:DeleteCertificate", "acm:AddTagsToCertificate", "acm:RemoveTagsFromCertificate"]
     resources = [local.certificates]
   }
-  # Only the site's own records and its certificate's validation records, never the rest of the zone.
+  # Only the old name's own records and its certificate's validation records, never the rest of the zone.
   statement {
     sid       = "RecordsWrite"
     actions   = ["route53:ChangeResourceRecordSets"]
@@ -253,7 +253,7 @@ data "aws_iam_policy_document" "ci_deploy" {
     condition {
       test     = "ForAllValues:StringLike"
       variable = "route53:ChangeResourceRecordSetsNormalizedRecordNames"
-      values   = [var.domain_name, "_*.${var.domain_name}"]
+      values   = [var.legacy_domain_name, "_*.${var.legacy_domain_name}"]
     }
   }
   statement {

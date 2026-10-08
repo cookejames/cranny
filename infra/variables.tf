@@ -1,11 +1,17 @@
 variable "domain_name" {
-  description = "Where the site is served."
+  description = "Where the site is served: a domain registered at Porkbun, with its DNS there too (the apex, not a subdomain)."
+  type        = string
+  default     = "playcranny.com"
+}
+
+variable "legacy_domain_name" {
+  description = "The old name, which still points at the distribution and 301-redirects to domain_name."
   type        = string
   default     = "cranny.cooke.ing"
 }
 
-variable "zone_name" {
-  description = "The existing Route 53 hosted zone that domain_name lives in."
+variable "legacy_zone_name" {
+  description = "The existing Route 53 hosted zone that legacy_domain_name lives in."
   type        = string
   default     = "cooke.ing"
 }

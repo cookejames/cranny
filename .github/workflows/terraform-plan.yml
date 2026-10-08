@@ -49,6 +49,9 @@ jobs:
           set -o pipefail
           terraform plan -input=false -lock=false -no-color -out=tfplan 2>&1 | tee plan.log
           terraform show -no-color tfplan > plan.txt
+        env:
+          PORKBUN_API_KEY: ${{ secrets.PORKBUN_API_KEY }}
+          PORKBUN_SECRET_API_KEY: ${{ secrets.PORKBUN_SECRET_API_KEY }}
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           PLAN_OUTCOME: ${{ steps.plan.outcome }}

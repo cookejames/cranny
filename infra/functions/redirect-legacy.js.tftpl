@@ -1,0 +1,28 @@
+// CloudFront viewer-request function for the old name (infra/cdn.tf): a permanent redirect to the
+// same path and query on the new one. Terraform fills in the two hosts. CloudFront calls
+// `handler` itself; the runtime has no exports.
+function handler(event) {
+  var request = event.request;
+  var host = request.headers.host && request.headers.host.value;
+  if (host !== '${legacy_host}') {
+    return request;
+  }
+
+  var parts = [];
+  var query = request.querystring;
+  Object.keys(query).forEach(function (name) {
+    var entry = query[name];
+    var values = entry.multiValue ? entry.multiValue.map(function (v) { return v.value; }) : [entry.value];
+    values.forEach(function (value) {
+      parts.push(value === '' ? name : name + '=' + value);
+    });
+  });
+
+  return {
+    statusCode: 301,
+    statusDescription: 'Moved Permanently',
+    headers: {
+      location: { value: 'https://${target_host}' + request.uri + (parts.length ? '?' + parts.join('&') : '') },
+    },
+  };
+}

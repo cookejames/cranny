@@ -24,7 +24,7 @@ function checkRoomTransport(): Plugin {
  * `/api` goes to the deployed rooms API (apps/rooms-api), so `pnpm dev:ably` and a preview of an
  * `ably` build play through real Ably. In production CloudFront routes it (infra/cdn.tf).
  */
-const roomsApiProxy = { '/api': { target: 'https://cranny.cooke.ing', changeOrigin: true } };
+const roomsApiProxy = { '/api': { target: 'https://playcranny.com', changeOrigin: true } };
 
 /**
  * `/relay` goes to PostHog without the prefix, as CloudFront sends it (infra/cdn.tf), so a
