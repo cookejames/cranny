@@ -48,7 +48,7 @@ function copyBySelection(text: string): boolean {
  * link are copied to the clipboard (with the Clipboard API, or by selection where that's
  * missing). Never throws.
  *
- * @param url - The absolute link, e.g. `https://cranny.cooke.ing/g/1XDWT5H`.
+ * @param url - The absolute link, e.g. `https://playcranny.com/g/1XDWT5H`.
  */
 export async function shareLink(text: string, url: string): Promise<ShareResult> {
   if (typeof navigator.share === 'function') {

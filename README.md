@@ -4,7 +4,7 @@
 
 Cranny is a quick brain-teaser for your phone or browser. Each grid is a 6×6 board with seven blocked squares. Drag nine block pieces into every nook and cranny until the board is full, as fast as you can.
 
-**[Play Cranny → cranny.cooke.ing](https://cranny.cooke.ing)**
+**[Play Cranny → playcranny.com](https://playcranny.com)**
 
 <p align="center">
   <img src="docs/screenshots/home.png" alt="Home screen: the Cranny wordmark, a solved board, your best and average times, and the Play button" width="250" />
@@ -83,7 +83,7 @@ The site is a static build hosted on AWS:
 - a private S3 bucket (eu-west-2)
 - served by CloudFront with security headers
 - an ACM certificate (us-east-1)
-- Route 53 records in the existing `cooke.ing` hosted zone
+- DNS records at Porkbun, where the domain is registered (managed through a community Terraform provider)
 - for multiplayer, the rooms API (API Gateway and a Lambda, reached through CloudFront at `/api/rooms`) and [Ably](https://ably.com) for the realtime messages
 
 Everything is defined in [`infra/`](infra/). GitHub Actions deploys every merge to `main`, and a developer machine can still deploy by hand.
@@ -92,7 +92,7 @@ Everything is defined in [`infra/`](infra/). GitHub Actions deploys every merge 
 
 - Terraform 1.10 or newer and AWS CLI v2. On a Mac: `brew install hashicorp/tap/terraform awscli`.
 - AWS credentials for the account, for example from `aws login`. Check them with `aws sts get-caller-identity`. Use an IAM user or role with admin rights rather than the root user.
-- The `cooke.ing` hosted zone in that account's Route 53.
+- A domain registered at Porkbun with API access switched on, and an API key limited to that domain (set `PORKBUN_API_KEY` and `PORKBUN_SECRET_API_KEY` in your shell for hand runs, and as GitHub Actions secrets for CI).
 - An Ably account (the free package is enough).
 
 ### One-time setup
@@ -120,7 +120,7 @@ The first apply takes around 5 to 15 minutes, mostly waiting for the certificate
 - the site bucket
 - the CloudFront distribution and its security headers policy
 - the certificate
-- the DNS records for `cranny.cooke.ing`
+- the DNS records for `playcranny.com`
 - the rooms API: its Lambda and HTTP API
 
 **3. Give the rooms API an Ably key.** In the Ably dashboard, create an API key restricted to the channels `room:*` with the publish, subscribe, presence and channel-metadata capabilities, and with token revocation on. Then store it where the Lambda reads it:
@@ -168,8 +168,8 @@ The script:
 Check the release with:
 
 ```bash
-curl -sI https://cranny.cooke.ing/g/1XDWT5H   # expect 200, no-cache, and the security headers
-curl -s -X POST https://cranny.cooke.ing/api/rooms/join \
+curl -sI https://playcranny.com/g/1XDWT5H   # expect 200, no-cache, and the security headers
+curl -s -X POST https://playcranny.com/api/rooms/join \
   -d '{"room":"no-such-room","self":"aaaaaaaaaaaaaaaaaaaaaa"}'   # expect {"error":"not-found"}
 ```
 

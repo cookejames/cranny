@@ -1,15 +1,28 @@
-data "aws_route53_zone" "zone" {
-  name = var.zone_name
+# DNS lives at Porkbun, where the domain is registered. The API key is limited to this domain, so
+# Terraform can change its records and nothing else. Porkbun's records are named relative to the
+# domain, so the apex is "" and ACM's "_x.example.com." becomes "_x".
+locals {
+  # ACM's validation records, keyed by name. Porkbun wants names without the domain and the trailing dots.
+  validation_records = {
+    for option in aws_acm_certificate.site.domain_validation_options : option.domain_name => {
+      subdomain = trimsuffix(trimsuffix(option.resource_record_name, "."), ".${var.domain_name}")
+      type      = option.resource_record_type
+      content   = trimsuffix(option.resource_record_value, ".")
+    }
+  }
 }
 
 # Only Amazon may issue certificates for the site's name (and none for wildcards under it).
-# Scoped to the subdomain, so the rest of the zone is unaffected.
-resource "aws_route53_record" "caa" {
-  zone_id = data.aws_route53_zone.zone.zone_id
-  name    = var.domain_name
-  type    = "CAA"
-  ttl     = 3600
-  records = ["0 issue \"amazon.com\"", "0 issuewild \";\""]
+resource "porkbun_dns_record" "caa" {
+  for_each = {
+    issue     = "0 issue \"amazon.com\""
+    issuewild = "0 issuewild \";\""
+  }
+
+  domain    = var.domain_name
+  subdomain = ""
+  type      = "CAA"
+  content   = each.value
 }
 
 resource "aws_acm_certificate" "site" {
@@ -18,42 +31,34 @@ resource "aws_acm_certificate" "site" {
   validation_method = "DNS"
 
   # ACM checks CAA before issuing.
-  depends_on = [aws_route53_record.caa]
+  depends_on = [porkbun_dns_record.caa]
 
   lifecycle {
     create_before_destroy = true
   }
 }
 
-resource "aws_route53_record" "validation" {
-  for_each = {
-    for option in aws_acm_certificate.site.domain_validation_options : option.domain_name => option
-  }
+resource "porkbun_dns_record" "validation" {
+  for_each = local.validation_records
 
-  zone_id         = data.aws_route53_zone.zone.zone_id
-  name            = each.value.resource_record_name
-  type            = each.value.resource_record_type
-  records         = [each.value.resource_record_value]
-  ttl             = 300
-  allow_overwrite = true
+  domain    = var.domain_name
+  subdomain = each.value.subdomain
+  type      = each.value.type
+  content   = each.value.content
 }
 
 resource "aws_acm_certificate_validation" "site" {
-  provider                = aws.us_east_1
-  certificate_arn         = aws_acm_certificate.site.arn
-  validation_record_fqdns = [for record in aws_route53_record.validation : record.fqdn]
+  provider        = aws.us_east_1
+  certificate_arn = aws_acm_certificate.site.arn
+
+  # ACM polls DNS itself; the records only need to exist first.
+  depends_on = [porkbun_dns_record.validation]
 }
 
-resource "aws_route53_record" "site" {
-  for_each = toset(["A", "AAAA"])
-
-  zone_id = data.aws_route53_zone.zone.zone_id
-  name    = var.domain_name
-  type    = each.value
-
-  alias {
-    name                   = aws_cloudfront_distribution.site.domain_name
-    zone_id                = aws_cloudfront_distribution.site.hosted_zone_id
-    evaluate_target_health = false
-  }
+# An ALIAS at the apex, where a CNAME isn't allowed. Porkbun resolves it to CloudFront's addresses.
+resource "porkbun_dns_record" "site" {
+  domain    = var.domain_name
+  subdomain = ""
+  type      = "ALIAS"
+  content   = aws_cloudfront_distribution.site.domain_name
 }

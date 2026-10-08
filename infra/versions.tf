@@ -7,6 +7,12 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 6.0"
     }
+    # Community provider (not official). Its API key is limited to this one domain in Porkbun, and
+    # comes from PORKBUN_API_KEY and PORKBUN_SECRET_API_KEY. Review upgrades before bumping.
+    porkbun = {
+      source  = "marcfrederick/porkbun"
+      version = "~> 1.3"
+    }
     archive = {
       source  = "hashicorp/archive"
       version = "~> 2.0"
@@ -30,6 +36,8 @@ provider "aws" {
     tags = { Project = "cranny" }
   }
 }
+
+provider "porkbun" {}
 
 # CloudFront only accepts certificates from us-east-1.
 provider "aws" {

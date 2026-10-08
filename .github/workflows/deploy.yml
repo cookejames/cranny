@@ -26,7 +26,7 @@ jobs:
     # The deploy role trusts only this environment, which only main may use.
     environment:
       name: production
-      url: https://cranny.cooke.ing
+      url: https://playcranny.com
     permissions:
       contents: read
       id-token: write
@@ -66,10 +66,13 @@ jobs:
           else
             echo "No infrastructure changes."
           fi
+        env:
+          PORKBUN_API_KEY: ${{ secrets.PORKBUN_API_KEY }}
+          PORKBUN_SECRET_API_KEY: ${{ secrets.PORKBUN_SECRET_API_KEY }}
       - name: Deploy
         run: scripts/deploy.sh
       - name: Smoke test
         run: |
-          curl -sfI https://cranny.cooke.ing/g/1XDWT5H
-          curl -s -X POST https://cranny.cooke.ing/api/rooms/join \
+          curl -sfI https://playcranny.com/g/1XDWT5H
+          curl -s -X POST https://playcranny.com/api/rooms/join \
             -d '{"room":"no-such-room","self":"aaaaaaaaaaaaaaaaaaaaaa"}' | tee /dev/stderr | grep -q '"error":"not-found"'
