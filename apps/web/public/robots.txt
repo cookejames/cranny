@@ -3,4 +3,4 @@ Allow: /
 Disallow: /api/
 Disallow: /relay/
 
-Sitemap: https://cranny.cooke.ing/sitemap.xml
+Sitemap: https://playcranny.com/sitemap.xml

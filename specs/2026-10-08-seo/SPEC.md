@@ -33,7 +33,7 @@ Server-side rendering or prerendering routes, a dedicated domain, Search Console
   - `twitter:card` is `summary_large_image`.
   - These matter most for shared grid and room links.
 - **JSON-LD:** a schema.org `VideoGame`, with true facts only: no ratings or reviews. It's an inline `<script type="application/ld+json">`. That's a data block that browsers never run, so the CSP's `script-src 'self'` doesn't block it or report it. It's the one inline `<script>` the app has.
-- **The address:** `https://cranny.cooke.ing` is written out in `index.html`, `robots.txt`, `sitemap.xml` and `SITE_ORIGIN`. `src/seo.test.ts` checks they agree. If `domain_name` in `infra/variables.tf` changes, change all of them.
+- **The address:** `https://playcranny.com` is written out in `index.html`, `robots.txt`, `sitemap.xml` and `SITE_ORIGIN`. It was `https://cranny.cooke.ing` before the move to playcranny.com, and that address now 301s here. `src/seo.test.ts` checks they agree. If `domain_name` in `infra/variables.tf` changes, change all of them.
 
 ## 4. How to play (`/how-to-play`)
 
