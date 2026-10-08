@@ -2,7 +2,7 @@
   "id": "/",
   "name": "Cranny",
   "short_name": "Cranny",
-  "description": "Cranny: fill the grid with nine pieces, against the clock.",
+  "description": "Cranny is a free block puzzle game: fit nine pieces into a 6×6 grid around seven blocked squares. Play solo against the clock, or race friends in multiplayer.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

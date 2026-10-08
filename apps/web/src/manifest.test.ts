@@ -9,10 +9,17 @@ import securityHeaders from '../security-headers.json';
  * production: every file the manifest and index.html point at must be in public/.
  */
 
-/** Every file in public/, as a base64 data URI, keyed by its path from the site root. */
+/**
+ * Every file in public/ but the plain-text ones (robots.txt, sitemap.xml: see seo.test.ts, which
+ * reads them raw), as a base64 data URI, keyed by its path from the site root.
+ */
 const PUBLIC: Record<string, string> = Object.fromEntries(
   Object.entries(
-    import.meta.glob<string>('../public/*', { query: '?inline', import: 'default', eager: true }),
+    import.meta.glob<string>(['../public/*', '!../public/*.{txt,xml}'], {
+      query: '?inline',
+      import: 'default',
+      eager: true,
+    }),
   ).map(([path, dataUri]) => [path.replace('../public', ''), dataUri]),
 );
 

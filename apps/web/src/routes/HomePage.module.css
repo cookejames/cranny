@@ -205,3 +205,26 @@
   font-size: 14px;
   color: var(--color-muted);
 }
+
+/*
+ * A text link, kept small so it takes little of the board's height on short screens: with both
+ * stats rows Home only just fits 375×667, so it sits closer to the buttons than they do to each
+ * other.
+ */
+.howToPlay {
+  align-self: center;
+  margin-top: -6px;
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-muted);
+  text-underline-offset: 3px;
+}
+
+.howToPlay:focus-visible {
+  outline: 3px solid var(--piece-i4);
+  outline-offset: 3px;
+  border-radius: 4px;
+}

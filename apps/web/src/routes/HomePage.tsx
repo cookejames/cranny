@@ -92,7 +92,8 @@ function StatsTable({ rows }: { rows: { mode: string; stats: Stats }[] }) {
  * tagline, a solved board, the player's stats once they have solved a grid, with their
  * multiplayer stats alongside once they have finished a multiplayer round
  * (specs/2026-09-26-multiplayer-stats/SPEC.md §4), Play, and Multiplayer in builds that have it
- * (specs/2026-09-25-multiplayer/SPEC.md §9).
+ * (specs/2026-09-25-multiplayer/SPEC.md §9), and a link to How to play
+ * (specs/2026-10-08-seo/SPEC.md §4).
  */
 export function HomePage({ multiplayer = false }: { multiplayer?: boolean }) {
   const [stats] = useState(loadStats);
@@ -203,6 +204,14 @@ export function HomePage({ multiplayer = false }: { multiplayer?: boolean }) {
             </svg>
           </Link>
         )}
+
+        <Link
+          to="/how-to-play"
+          className={styles.howToPlay}
+          onClick={() => track({ name: 'how_to_play_opened' })}
+        >
+          How to play
+        </Link>
       </div>
 
       <InstallDialog open={instructionsOpen} onClose={() => setInstructionsOpen(false)} />

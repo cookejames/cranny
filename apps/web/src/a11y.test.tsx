@@ -74,6 +74,11 @@ describe('accessibility', () => {
     expect(await violations()).toEqual([]);
   });
 
+  it('How to play', async () => {
+    renderAt('/how-to-play');
+    expect(await violations()).toEqual([]);
+  });
+
   it('the play screen before Start', async () => {
     renderAt('/g/1XDWT5H');
     expect(await violations()).toEqual([]);
