@@ -9,6 +9,9 @@ coverage/
 # Names the Terraform state bucket, which includes the AWS account ID. Generate it from
 # infra/bootstrap (see infra/backend.hcl.example).
 infra/backend.hcl
+infra/bootstrap/backend.hcl
+# Temporary local-backend override for creating the state bucket in a new account (README).
+infra/bootstrap/backend_override.tf
 *.tfplan
 # Local secrets, e.g. ABLY_KEY. .env.development is tracked (no secrets).
 .env

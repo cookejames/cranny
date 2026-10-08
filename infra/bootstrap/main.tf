@@ -1,14 +1,26 @@
 # Set up by hand: the S3 bucket that holds the main configuration's Terraform state (SPEC.md §11),
-# and GitHub Actions' roles (ci.tf). Its own state is local (terraform.tfstate here, git-ignored):
-# everything it manages can be re-imported if the file is lost. Run it before `terraform init` in
-# infra/, and again whenever ci.tf changes:
+# and GitHub Actions' roles (ci.tf). Its own state lives in that same bucket under its own key,
+# bootstrap/terraform.tfstate, which CI's roles can't reach (ci.tf only names cranny/terraform.tfstate):
+# CI must not be able to edit the configuration that defines its permissions. Bucket and region come
+# from backend.hcl in this directory (git-ignored; see backend.hcl.example). Run it before
+# `terraform init` in infra/, and again whenever ci.tf changes:
 #
-#   terraform -chdir=infra/bootstrap init
+#   terraform -chdir=infra/bootstrap init -backend-config=backend.hcl
 #   terraform -chdir=infra/bootstrap apply
 #   terraform -chdir=infra/bootstrap output -raw backend_config > infra/backend.hcl
+#
+# The first run in a new account has no bucket to hold state yet: see "Starting from scratch" in
+# README.md (specs/2026-10-08-bootstrap-remote-state/).
 
 terraform {
   required_version = ">= 1.10"
+
+  # Bucket and region are in backend.hcl: terraform init -backend-config=backend.hcl
+  backend "s3" {
+    key          = "bootstrap/terraform.tfstate"
+    use_lockfile = true
+    encrypt      = true
+  }
 
   required_providers {
     aws = {
@@ -107,7 +119,7 @@ output "bucket" {
 }
 
 output "backend_config" {
-  description = "Settings for infra/backend.hcl (terraform init -backend-config=backend.hcl)."
+  description = "Settings for infra/backend.hcl, and for infra/bootstrap/backend.hcl, which names the same bucket (terraform init -backend-config=backend.hcl)."
   value       = <<-EOT
     bucket = "${aws_s3_bucket.state.id}"
     region = "${var.region}"
