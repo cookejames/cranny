@@ -83,7 +83,7 @@ The site is a static build hosted on AWS:
 - a private S3 bucket (eu-west-2)
 - served by CloudFront with security headers
 - an ACM certificate (us-east-1)
-- DNS records at Porkbun, where the domain is registered (managed through a community Terraform provider)
+- DNS records at Porkbun, where the domain is registered (managed through a community Terraform provider), and records in the existing `cooke.ing` Route 53 zone for the old `cranny.cooke.ing`, which 301-redirects to the new name
 - for multiplayer, the rooms API (API Gateway and a Lambda, reached through CloudFront at `/api/rooms`) and [Ably](https://ably.com) for the realtime messages
 
 Everything is defined in [`infra/`](infra/). GitHub Actions deploys every merge to `main`, and a developer machine can still deploy by hand.
@@ -92,6 +92,7 @@ Everything is defined in [`infra/`](infra/). GitHub Actions deploys every merge 
 
 - Terraform 1.10 or newer and AWS CLI v2. On a Mac: `brew install hashicorp/tap/terraform awscli`.
 - AWS credentials for the account, for example from `aws login`. Check them with `aws sts get-caller-identity`. Use an IAM user or role with admin rights rather than the root user.
+- The `cooke.ing` hosted zone in that account's Route 53, for the old name's redirect.
 - A domain registered at Porkbun with API access switched on, and an API key limited to that domain (set `PORKBUN_API_KEY` and `PORKBUN_SECRET_API_KEY` in your shell for hand runs, and as GitHub Actions secrets for CI).
 - An Ably account (the free package is enough).
 

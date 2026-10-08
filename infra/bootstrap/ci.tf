@@ -20,6 +20,22 @@ variable "github_subject_prefix" {
   default     = "repo:cookejames@2211370/cranny@1386290316"
 }
 
+variable "legacy_zone_name" {
+  description = "The Route 53 hosted zone the old name's records live in (infra/variables.tf)."
+  type        = string
+  default     = "cooke.ing"
+}
+
+variable "legacy_domain_name" {
+  description = "The old name, which redirects to the new one (infra/variables.tf); CI may change only records for it."
+  type        = string
+  default     = "cranny.cooke.ing"
+}
+
+data "aws_route53_zone" "zone" {
+  name = var.legacy_zone_name
+}
+
 locals {
   account        = data.aws_caller_identity.current.account_id
   state_key      = "cranny/terraform.tfstate"
@@ -115,6 +131,21 @@ data "aws_iam_policy_document" "ci_read" {
     sid       = "CertificateRead"
     actions   = ["acm:DescribeCertificate", "acm:GetCertificate", "acm:ListTagsForCertificate"]
     resources = [local.certificates]
+  }
+  statement {
+    sid       = "ZoneLookup"
+    actions   = ["route53:ListHostedZones", "route53:ListHostedZonesByName"]
+    resources = ["*"]
+  }
+  statement {
+    sid       = "ZoneRead"
+    actions   = ["route53:GetHostedZone", "route53:ListResourceRecordSets", "route53:ListTagsForResource"]
+    resources = [data.aws_route53_zone.zone.arn]
+  }
+  statement {
+    sid       = "ChangeRead"
+    actions   = ["route53:GetChange"]
+    resources = ["arn:aws:route53:::change/*"]
   }
   statement {
     sid       = "FunctionRead"
@@ -213,6 +244,17 @@ data "aws_iam_policy_document" "ci_deploy" {
     sid       = "CertificateWrite"
     actions   = ["acm:DeleteCertificate", "acm:AddTagsToCertificate", "acm:RemoveTagsFromCertificate"]
     resources = [local.certificates]
+  }
+  # Only the old name's own records and its certificate's validation records, never the rest of the zone.
+  statement {
+    sid       = "RecordsWrite"
+    actions   = ["route53:ChangeResourceRecordSets"]
+    resources = [data.aws_route53_zone.zone.arn]
+    condition {
+      test     = "ForAllValues:StringLike"
+      variable = "route53:ChangeResourceRecordSetsNormalizedRecordNames"
+      values   = [var.legacy_domain_name, "_*.${var.legacy_domain_name}"]
+    }
   }
   statement {
     sid = "FunctionWrite"
